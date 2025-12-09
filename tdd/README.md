@@ -5,11 +5,16 @@ Développé en utilisant une approche **TDD stricte** (Test-Driven Development).
 
 ## 📋 Objectifs
 
-Créer une classe `Laboratory` capable de :
-- 🧪 Gérer un stock de substances
-- ⚗️ Définir des réactions (produits créés à partir de substances)
-- 🔬 Fabriquer des produits en consommant les substances nécessaires
-- ♻️ Gérer des réactions complexes (produits utilisés comme ingrédients)
+### Fonctionnalités Principales
+
+**Classe `Laboratory`** :
+- `__construct(substances, reactions)` : Initialise avec validation
+- `getQuantity(substance)` : Consulte le stock
+- `add(substance, quantite)` : Ajoute au stock
+- `make(produit, quantite)` : Produit en consommant les ingrédients
+- `makeCircular(produit, quantite)` : Produit avec support des réactions circulaires ✨
+
+**Exemple** :
 
 ## 🚀 Installation
 
@@ -111,9 +116,15 @@ echo $lab->getQuantity('saline'); // 2.0
 
 ## ✅ Conformité Cours
 
+### Caractéristiques
+- ✅ **21 tests** PHPUnit (43 assertions)
+- ✅ **17 commits Git** suivant Red-Green-Refactor
+- ✅ Substances, réactions, et production de produits
+- ✅ Support des produits comme ingrédients
+- ✅ Production partielle intelligente
+- ✅ **Réactions circulaires** (optionnel implémenté) ✨
 - ✅ TDD strict pour toutes les fonctionnalités
 - ✅ Commits Git à chaque étape Red-Green-Refactor
 - ✅ Toutes les étapes implémentées (1-4)
 - ✅ Gestion complète des cas d'erreur
 - ✅ Support des produits comme ingrédients
-
