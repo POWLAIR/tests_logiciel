@@ -431,4 +431,37 @@ class SchedulerTest extends TestCase
         $tasks = $scheduler->getTasks();
         $this->assertArrayHasKey('one-time-meeting', $tasks);
     }
+
+    /**
+     * 🔴 RED - Iteration 15.1
+     * Tâche one-time avec auto_remove se supprime après exécution
+     */
+    public function testOneTimeTaskWithAutoRemove(): void
+    {
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(strtotime('2025-01-15 13:00:00'));
+        $scheduler = new Scheduler($timeProvider);
+        
+        $executionCount = 0;
+        $callback = function() use (&$executionCount) {
+            $executionCount++;
+        };
+        
+        // Planifier avec option auto_remove
+        $scheduler->scheduleTask('temp-reminder', $callback, '@2025-01-15 14:00', true);
+        
+        // Vérifier que la tâche existe
+        $tasks = $scheduler->getTasks();
+        $this->assertArrayHasKey('temp-reminder', $tasks);
+        $this->assertCount(1, $tasks);
+        
+        // Avancer à 14h et exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 14:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Devrait exécuter une fois");
+        
+        // Vérifier que la tâche a été SUPPRIMÉE automatiquement
+        $tasks = $scheduler->getTasks();
+        $this->assertArrayNotHasKey('temp-reminder', $tasks, "Tâche devrait être auto-supprimée");
+        $this->assertCount(0, $tasks);
+    }
 }
