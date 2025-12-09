@@ -105,4 +105,41 @@ class SchedulerTest extends TestCase
         $scheduler->tick();
         $this->assertEquals(2, $executionCount, "Devrait exécuter après 60s");
     }
+
+    /**
+     * 🔴 RED - Iteration 7.1
+     * tick() exécute les tâches "toutes les N minutes"
+     */
+    public function testTickExecutesTasksEveryNMinutes(): void
+    {
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(0);
+        $scheduler = new Scheduler($timeProvider);
+        
+        $executionCount = 0;
+        $callback = function() use (&$executionCount) {
+            $executionCount++;
+        };
+        
+        // Planifier une tâche "toutes les 5 minutes"
+        $scheduler->scheduleTask('every-5-minutes', $callback, '*/5');
+        
+        // Premier tick : doit exécuter
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount);
+        
+        // Avancer de 4 minutes : ne doit PAS exécuter
+        $timeProvider->advanceTime(4 * 60);
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas exécuter après 4 min");
+        
+        // Avancer de 1 minute de plus (total 5 min) : doit exécuter
+        $timeProvider->advanceTime(60);
+        $scheduler->tick();
+        $this->assertEquals(2, $executionCount, "Devrait exécuter après 5 min");
+        
+        // Avancer de 10 minutes : doit exécuter encore une fois
+        $timeProvider->advanceTime(10 * 60);
+        $scheduler->tick();
+        $this->assertEquals(3, $executionCount, "Devrait exécuter après 15 min total");
+    }
 }
