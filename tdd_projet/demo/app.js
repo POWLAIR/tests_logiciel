@@ -835,6 +835,30 @@ class SchedulerUI {
         return labels[periodicity] || periodicity;
     }
 
+    showTaskDetails(taskName) {
+        const task = this.tasks.get(taskName);
+        if (!task) return;
+
+        document.getElementById('modal-task-name').textContent = taskName;
+        document.getElementById('modal-periodicity').textContent = this.getPeriodicityLabel(task.periodicity);
+
+        const nextExec = this.getNextExecution(task);
+        document.getElementById('modal-next-exec').textContent = nextExec
+            ? new Date(nextExec).toLocaleString('fr-FR')
+            : 'Aucune';
+
+        document.getElementById('modal-exec-count').textContent = task.executionCount;
+        document.getElementById('modal-last-exec').textContent = task.lastExecution
+            ? new Date(task.lastExecution).toLocaleString('fr-FR')
+            : 'Jamais';
+
+        const options = [];
+        if (task.autoRemove) options.push('🔄 Auto-suppression');
+        document.getElementById('modal-options').innerHTML = options.join(', ') || 'Aucune';
+
+        document.getElementById('task-details-modal').style.display = 'flex';
+    }
+
     showNotification(message, type = 'info') {
         const icons = {
             success: '✅',
@@ -868,3 +892,14 @@ class SchedulerUI {
 document.addEventListener('DOMContentLoaded', () => {
     window.schedulerUI = new SchedulerUI();
 });
+
+// Global functions for modal
+window.closeTaskDetails = function () {
+    document.getElementById('task-details-modal').style.display = 'none';
+};
+
+window.editTaskFromModal = function () {
+    const taskName = document.getElementById('modal-task-name').textContent;
+    window.closeTaskDetails();
+    window.schedulerUI.editTask(taskName);
+};

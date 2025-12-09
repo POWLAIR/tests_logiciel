@@ -173,6 +173,43 @@
         </section>
     </div>
 
+    <!-- Modal de détails de tâche -->
+    <div id="task-details-modal" class="modal" style="display: none;">
+        <div class="modal-backdrop" onclick="window.closeTaskDetails()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-task-name"></h3>
+                <button class="modal-close" onclick="window.closeTaskDetails()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-row">
+                    <span class="detail-label">📋 Périodicité</span>
+                    <span id="modal-periodicity"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">⏱️ Prochaine exécution</span>
+                    <span id="modal-next-exec"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">📊 Exécutions totales</span>
+                    <span id="modal-exec-count"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">🕐 Dernière exécution</span>
+                    <span id="modal-last-exec"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">⚙️ Options</span>
+                    <span id="modal-options"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeTaskDetails()">Fermer</button>
+                <button class="btn btn-primary" onclick="window.editTaskFromModal()">✏️ Éditer</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
     <script src="calendar.js"></script>
 </body>
