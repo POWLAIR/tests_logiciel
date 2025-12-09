@@ -390,4 +390,45 @@ class SchedulerTest extends TestCase
         $scheduler->tick();
         $this->assertEquals(2, $executionCount, "Ne devrait pas réexécuter le même jour");
     }
+
+    /**
+     * 🔴 RED - Iteration 14.1
+     * Peut planifier une tâche one-time à une date/heure spécifique
+     */
+    public function testCanScheduleOneTimeTask(): void
+    {
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(strtotime('2025-01-15 08:00:00'));
+        $scheduler = new Scheduler($timeProvider);
+        
+        $executionCount = 0;
+        $callback = function() use (&$executionCount) {
+            $executionCount++;
+        };
+        
+        // Format : @YYYY-MM-DD HH:MM (tâche unique)
+        $scheduler->scheduleTask('one-time-meeting', $callback, '@2025-01-15 14:00');
+        
+        // 8h : ne doit PAS exécuter (pas encore l'heure)
+        $scheduler->tick();
+        $this->assertEquals(0, $executionCount, "Ne devrait pas exécuter à 8h");
+        
+        // 14h : DOIT exécuter (heure exacte)
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 14:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Devrait exécuter à 14h");
+        
+        // 14h01 : ne doit PAS réexécuter (c'est une tâche one-time)
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 14:01:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait JAMAIS réexécuter (one-time)");
+        
+        // Lendemain même heure : ne doit PAS exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-16 14:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas exécuter le lendemain");
+        
+        // Vérifier que la tâche existe toujours dans la liste
+        $tasks = $scheduler->getTasks();
+        $this->assertArrayHasKey('one-time-meeting', $tasks);
+    }
 }
