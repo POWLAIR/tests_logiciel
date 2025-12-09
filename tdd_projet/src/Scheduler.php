@@ -62,6 +62,31 @@ class Scheduler
     }
 
     /**
+     * Met à jour une tâche existante
+     * 
+     * @param string $name Nom de la tâche à mettre à jour
+     * @param callable $callback Nouvelle fonction à exécuter
+     * @param string $periodicity Nouvelle périodicité
+     * @return void
+     * @throws \InvalidArgumentException Si la tâche n'existe pas
+     */
+    public function updateTask(string $name, callable $callback, string $periodicity = '*'): void
+    {
+        if (!isset($this->tasks[$name])) {
+            throw new \InvalidArgumentException("Task with name '{$name}' does not exist.");
+        }
+
+        // Garder la dernière exécution pour ne pas réinitialiser
+        $lastExecution = $this->tasks[$name]['lastExecution'];
+
+        $this->tasks[$name] = [
+            'callback' => $callback,
+            'periodicity' => $periodicity,
+            'lastExecution' => $lastExecution
+        ];
+    }
+
+    /**
      * Supprime une tâche planifiée
      * 
      * @param string $name Nom de la tâche à supprimer
