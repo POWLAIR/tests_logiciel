@@ -17,7 +17,19 @@ class Laboratory
      */
     public function __construct(array $substances)
     {
+        $seen = [];
         foreach ($substances as $substance) {
+            // Validate substance is a string
+            if (!is_string($substance)) {
+                throw new \InvalidArgumentException('All substance names must be strings');
+            }
+            
+            // Check for duplicates
+            if (isset($seen[$substance])) {
+                throw new \InvalidArgumentException("Duplicate substance name: {$substance}");
+            }
+            
+            $seen[$substance] = true;
             $this->stock[$substance] = 0.0;
         }
     }
@@ -27,6 +39,10 @@ class Laboratory
      */
     public function getQuantity(string $substance): float
     {
+        if (!isset($this->stock[$substance])) {
+            throw new \InvalidArgumentException("Unknown substance: {$substance}");
+        }
+        
         return $this->stock[$substance];
     }
 }
