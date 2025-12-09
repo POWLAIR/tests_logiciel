@@ -163,6 +163,13 @@
     grid-column: 1 / -1;
 }
 
+/* Reset grid for day view */
+#calendar-days.day-view-container {
+    display: block;
+    grid-template-columns: none;
+    gap: 0;
+}
+
 
 .calendar-day {
     aspect-ratio: 1;
