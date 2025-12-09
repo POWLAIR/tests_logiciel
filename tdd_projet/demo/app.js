@@ -487,6 +487,9 @@ class SchedulerUI {
                     ${task.autoRemove ? '<span class="task-badge badge-auto-remove">🔄 Auto-suppression</span>' : ''}
                     <span>${task.executionCount} exécution(s)</span>
                 </div>
+                <div class="task-next-exec">
+                    ${this.getNextExecutionDisplay(task)}
+                </div>
             </div>
         `).join('');
     }
@@ -542,6 +545,128 @@ class SchedulerUI {
         ];
 
         return patterns.some(pattern => pattern.test(periodicity));
+    }
+
+    getNextExecution(task) {
+        const { periodicity, lastExecution } = task;
+        const currentTime = this.currentTime.getTime();
+
+        // For one-time tasks
+        const matchOneTime = periodicity.match(/^@(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/);
+        if (matchOneTime) {
+            if (lastExecution !== null) return null; // Already executed
+
+            const targetDate = new Date(
+                parseInt(matchOneTime[1]),
+                parseInt(matchOneTime[2]) - 1,
+                parseInt(matchOneTime[3]),
+                parseInt(matchOneTime[4]),
+                parseInt(matchOneTime[5])
+            );
+            return targetDate.getTime();
+        }
+
+        // For */N (every N minutes)
+        if (periodicity.match(/^\*\/(\d+)$/)) {
+            const minutes = parseInt(periodicity.match(/^\*\/(\d+)$/)[1]);
+            if (!lastExecution) {
+                return currentTime + (minutes * 60 * 1000);
+            }
+            return lastExecution + (minutes * 60 * 1000);
+        }
+
+        // For * (every minute)
+        if (periodicity === '*') {
+            if (!lastExecution) return currentTime + 60000;
+            return lastExecution + 60000;
+        }
+
+        // For M H * * * (daily at specific time)
+        const matchDaily = periodicity.match(/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/);
+        if (matchDaily) {
+            const targetMinute = parseInt(matchDaily[1]);
+            const targetHour = parseInt(matchDaily[2]);
+            const now = new Date(currentTime);
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), targetHour, targetMinute, 0);
+
+            if (today.getTime() > currentTime) {
+                return today.getTime();
+            }
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            return tomorrow.getTime();
+        }
+
+        // For M H * * D (specific day of week)
+        const matchWeekly = periodicity.match(/^(\d+)\s+(\d+)\s+\*\s+\*\s+(\d+)$/);
+        if (matchWeekly) {
+            const targetMinute = parseInt(matchWeekly[1]);
+            const targetHour = parseInt(matchWeekly[2]);
+            const targetDay = parseInt(matchWeekly[3]);
+
+            let searchDate = new Date(currentTime);
+            for (let i = 0; i < 8; i++) {
+                if (searchDate.getDay() === targetDay) {
+                    const candidate = new Date(searchDate.getFullYear(), searchDate.getMonth(), searchDate.getDate(), targetHour, targetMinute, 0);
+                    if (candidate.getTime() > currentTime) {
+                        return candidate.getTime();
+                    }
+                }
+                searchDate.setDate(searchDate.getDate() + 1);
+            }
+        }
+
+        // For M H D * * (specific day of month)
+        const matchMonthly = periodicity.match(/^(\d+)\s+(\d+)\s+(\d+)\s+\*\s+\*$/);
+        if (matchMonthly) {
+            const targetMinute = parseInt(matchMonthly[1]);
+            const targetHour = parseInt(matchMonthly[2]);
+            const targetDay = parseInt(matchMonthly[3]);
+            const now = new Date(currentTime);
+            const thisMonth = new Date(now.getFullYear(), now.getMonth(), targetDay, targetHour, targetMinute, 0);
+
+            if (thisMonth.getTime() > currentTime) {
+                return thisMonth.getTime();
+            }
+            const nextMonth = new Date(thisMonth);
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            return nextMonth.getTime();
+        }
+
+        return null;
+    }
+
+    getNextExecutionDisplay(task) {
+        const nextTime = this.getNextExecution(task);
+
+        if (nextTime === null) {
+            if (task.lastExecution !== null) {
+                return '<span class="next-exec executed">✅ Déjà exécutée</span>';
+            }
+            return '<span class="next-exec">⏱️ N/A</span>';
+        }
+
+        const nextDate = new Date(nextTime);
+        const diffMs = nextTime - this.currentTime.getTime();
+        const diffMinutes = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        let countdown = '';
+        if (diffDays > 0) {
+            countdown = `Dans ${diffDays}j ${diffHours % 24}h`;
+        } else if (diffHours > 0) {
+            countdown = `Dans ${diffHours}h ${diffMinutes % 60}min`;
+        } else if (diffMinutes > 0) {
+            countdown = `Dans ${diffMinutes}min`;
+        } else {
+            countdown = 'Imminent';
+        }
+
+        const dateStr = nextDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const timeStr = nextDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+        return `<span class="next-exec">⏱️ Prochaine : ${dateStr} ${timeStr} <em>(${countdown})</em></span>`;
     }
 
     getPeriodicityLabel(periodicity) {

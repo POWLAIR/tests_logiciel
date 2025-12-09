@@ -432,6 +432,28 @@ body::before {
     color: var(--text-muted);
 }
 
+.task-next-exec {
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--bg-primary);
+    font-size: 0.75rem;
+}
+
+.next-exec {
+    color: var(--text-secondary);
+}
+
+.next-exec em {
+    color: var(--accent-success);
+    font-style: normal;
+    font-weight: 600;
+}
+
+.next-exec.executed {
+    color: var(--accent-danger);
+}
+
+
 .task-badge {
     display: inline-block;
     padding: 0.25rem 0.75rem;
