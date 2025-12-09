@@ -92,4 +92,52 @@ class Laboratory
         
         $this->stock[$substance] += $quantity;
     }
+
+    /**
+     * Make a product using substances from stock.
+     *
+     * @param string $product The product to make
+     * @param float $quantity The desired quantity to produce
+     * @return float The actual quantity produced (may be less if insufficient ingredients)
+     */
+    public function make(string $product, float $quantity): float
+    {
+        // Validate product exists in reactions
+        if (!isset($this->reactions[$product])) {
+            throw new \InvalidArgumentException("Unknown product: {$product}");
+        }
+
+        $recipe = $this->reactions[$product];
+        
+        // Calculate maximum quantity we can actually produce
+        $maxProducible = $quantity;
+        
+        foreach ($recipe as $ingredient) {
+            $neededPerUnit = $ingredient['quantity'];
+            $substanceName = $ingredient['substance'];
+            $available = $this->stock[$substanceName];
+            
+            if ($neededPerUnit > 0) {
+                $maxFromThisIngredient = $available / $neededPerUnit;
+                $maxProducible = min($maxProducible, $maxFromThisIngredient);
+            }
+        }
+        
+        // If we can't produce anything, return 0
+        if ($maxProducible <= 0) {
+            return 0.0;
+        }
+        
+        // Consume the ingredients
+        foreach ($recipe as $ingredient) {
+            $substanceName = $ingredient['substance'];
+            $neededTotal = $ingredient['quantity'] * $maxProducible;
+            $this->stock[$substanceName] -= $neededTotal;
+        }
+        
+        // Add the produced product to stock
+        $this->stock[$product] += $maxProducible;
+        
+        return $maxProducible;
+    }
 }
