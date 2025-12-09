@@ -244,6 +244,79 @@ class Scheduler
     }
 
     /**
+     * Récupère toutes les exécutions de toutes les tâches dans une plage de dates
+     * ESSENTIEL pour afficher le calendrier !
+     * 
+     * @param int $startTime Timestamp de début
+     * @param int $endTime Timestamp de fin
+     * @return array Tableau associatif [taskName => [timestamps]]
+     */
+    public function getExecutionsInRange(int $startTime, int $endTime): array
+    {
+        $result = [];
+        
+        foreach ($this->tasks as $name => $task) {
+            $executions = [];
+            $periodicity = $task['periodicity'];
+            
+            // Pour tâches one-time
+            if (preg_match('/^@(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/', $periodicity, $matches)) {
+                $year = (int)$matches[1];
+                $month = (int)$matches[2];
+                $day = (int)$matches[3];
+                $hour = (int)$matches[4];
+                $minute = (int)$matches[5];
+                
+                $targetTimestamp = mktime($hour, $minute, 0, $month, $day, $year);
+                
+                if ($targetTimestamp >= $startTime && $targetTimestamp <= $endTime) {
+                    $executions[] = $targetTimestamp;
+                }
+            }
+            // Pour tâches récurrentes, parcourir la période
+            else {
+                // Calculer chaque jour dans la plage
+                $currentDay = $startTime;
+                
+                while ($currentDay <= $endTime) {
+                    // Pour chaque jour, tester si la tâche doit s'exécuter
+                    $dayStart = strtotime(date('Y-m-d 00:00:00', $currentDay));
+                    $dayEnd = strtotime(date('Y-m-d 23:59:59', $currentDay));
+                    
+                    // Simuler l'exécution pour ce jour
+                    $mockTask = [
+                        'periodicity' => $periodicity,
+                        'lastExecution' => null
+                    ];
+                    
+                    // Tester chaque heure du jour
+                    for ($hour = 0; $hour < 24; $hour++) {
+                        for ($minute = 0; $minute < 60; $minute += 1) { // Tester chaque minute
+                            $testTime = mktime($hour, $minute, 0, (int)date('m', $dayStart), (int)date('d', $dayStart), (int)date('Y', $dayStart));
+                            
+                            if ($testTime >= $startTime && $testTime <= $endTime) {
+                                if ($this->shouldExecute($mockTask, $testTime)) {
+                                    $executions[] = $testTime;
+                                    // Pour éviter les doublons du même moment
+                                    break 2; // Sort des boucles hour/minute
+                                }
+                            }
+                        }
+                    }
+                    
+                    $currentDay = strtotime('+1 day', $dayStart);
+                }
+            }
+            
+            if (!empty($executions)) {
+                $result[$name] = $executions;
+            }
+        }
+        
+        return $result;
+    }
+
+    /**
      * Détermine si une tâche doit être exécutée
      * 
      * @param array $task Données de la tâche
