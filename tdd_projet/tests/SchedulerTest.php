@@ -341,4 +341,53 @@ class SchedulerTest extends TestCase
         // Vérifier que la périodicité a bien été mise à jour
         $this->assertEquals('*/5', $tasks['my-task']['periodicity']);
     }
+
+    /**
+     * 🔴 RED - Iteration 13.1
+     * tick() exécute les tâches à jour du mois spécifique (0 H D * *)
+     */
+    public function testTickExecutesTasksOnSpecificDayOfMonth(): void
+    {
+        // Test : tâche le 1er de chaque mois à 9h (0 9 1 * *)
+        // 2025-01-01 09:00 = Mercredi
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(strtotime('2025-01-01 08:00:00'));
+        $scheduler = new Scheduler($timeProvider);
+        
+        $executionCount = 0;
+        $callback = function() use (&$executionCount) {
+            $executionCount++;
+        };
+        
+        // Tâche programmée pour le 1er de chaque mois à 9h (0 9 1 * *)
+        $scheduler->scheduleTask('monthly-report', $callback, '0 9 1 * *');
+        
+        // 1er janvier à 8h : ne doit PAS exécuter (pas encore 9h)
+        $scheduler->tick();
+        $this->assertEquals(0, $executionCount, "Ne devrait pas exécuter à 8h");
+        
+        // 1er janvier à 9h : DOIT exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-01 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Devrait exécuter le 1er à 9h");
+        
+        // 2 janvier à 9h : ne doit PAS exécuter (pas le 1er)
+        $timeProvider->setCurrentTime(strtotime('2025-01-02 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas exécuter le 2");
+        
+        // 15 janvier à 9h : ne doit PAS exécuter (pas le 1er)
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas exécuter le 15");
+        
+        // 1er février à 9h : DOIT exécuter (1er du mois suivant)
+        $timeProvider->setCurrentTime(strtotime('2025-02-01 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(2, $executionCount, "Devrait exécuter le 1er février");
+        
+        // 1er février à 9h30 : ne doit PAS réexécuter (déjà fait aujourd'hui)
+        $timeProvider->setCurrentTime(strtotime('2025-02-01 09:30:00'));
+        $scheduler->tick();
+        $this->assertEquals(2, $executionCount, "Ne devrait pas réexécuter le même jour");
+    }
 }
