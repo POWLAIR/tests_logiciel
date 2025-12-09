@@ -98,10 +98,18 @@ class Scheduler
             return true;
         }
 
+        $periodicity = $task['periodicity'];
+        $elapsed = $currentTime - $task['lastExecution'];
+
         // Pour '*' (chaque minute) : vérifier si 60 secondes sont passées
-        if ($task['periodicity'] === '*') {
-            $elapsed = $currentTime - $task['lastExecution'];
+        if ($periodicity === '*') {
             return $elapsed >= 60;
+        }
+
+        // Pour '*/N' (toutes les N minutes) : vérifier si N*60 secondes sont passées
+        if (preg_match('/^\*\/(\d+)$/', $periodicity, $matches)) {
+            $minutes = (int)$matches[1];
+            return $elapsed >= ($minutes * 60);
         }
 
         return false;
