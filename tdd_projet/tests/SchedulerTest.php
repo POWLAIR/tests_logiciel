@@ -313,4 +313,32 @@ class SchedulerTest extends TestCase
         $scheduler->tick();
         $this->assertEquals(2, $executionCount, "Devrait exécuter lundi suivant à 9h");
     }
+
+    /**
+     * 🔴 RED - Iteration 12.1
+     * Peut mettre à jour une tâche existante (callback et/ou périodicité)
+     */
+    public function testCanUpdateExistingTask(): void
+    {
+        $scheduler = new Scheduler();
+        
+        $count1 = 0;
+        $count2 = 0;
+        
+        $callback1 = function() use (&$count1) { $count1++; };
+        $callback2 = function() use (&$count2) { $count2++; };
+        
+        // Planifier une tâche initiale
+        $scheduler->scheduleTask('my-task', $callback1, '*');
+        
+        // Mettre à jour la tâche avec un nouveau callback et périodicité
+        $scheduler->updateTask('my-task', $callback2, '*/5');
+        
+        $tasks = $scheduler->getTasks();
+        $this->assertCount(1, $tasks, "Devrait avoir 1 seule tâche");
+        $this->assertArrayHasKey('my-task', $tasks);
+        
+        // Vérifier que la périodicité a bien été mise à jour
+        $this->assertEquals('*/5', $tasks['my-task']['periodicity']);
+    }
 }
