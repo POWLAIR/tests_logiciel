@@ -30,4 +30,42 @@ class LaboratoryTest extends TestCase
         $this->assertSame(0.0, $laboratory->getQuantity('salt'));
         $this->assertSame(0.0, $laboratory->getQuantity('sugar'));
     }
+
+    /**
+     * @test
+     * Iteration 1.3 - Constructor rejects invalid substance names
+     */
+    public function it_rejects_non_string_substance_names(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('All substance names must be strings');
+        
+        new Laboratory(['water', 123, 'salt']);
+    }
+
+    /**
+     * @test
+     * Iteration 1.3 - Constructor rejects duplicate substances
+     */
+    public function it_rejects_duplicate_substance_names(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Duplicate substance name');
+        
+        new Laboratory(['water', 'salt', 'water']);
+    }
+
+    /**
+     * @test
+     * Iteration 1.4 - getQuantity with non-existing substance throws exception
+     */
+    public function it_throws_exception_for_unknown_substance(): void
+    {
+        $laboratory = new Laboratory(['water', 'salt']);
+        
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown substance');
+        
+        $laboratory->getQuantity('unknown');
+    }
 }
