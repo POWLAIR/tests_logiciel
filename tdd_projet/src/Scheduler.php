@@ -45,10 +45,11 @@ class Scheduler
      * @param string $name Nom de la tâche
      * @param callable $callback Fonction à exécuter
      * @param string $periodicity Périodicité ('*' = chaque minute)
+     * @param bool $autoRemove Supprimer automatiquement après exécution (pour one-time)
      * @return void
      * @throws \InvalidArgumentException Si une tâche avec ce nom existe déjà
      */
-    public function scheduleTask(string $name, callable $callback, string $periodicity = '*'): void
+    public function scheduleTask(string $name, callable $callback, string $periodicity = '*', bool $autoRemove = false): void
     {
         if (isset($this->tasks[$name])) {
             throw new \InvalidArgumentException("Task with name '{$name}' already exists.");
@@ -57,7 +58,8 @@ class Scheduler
         $this->tasks[$name] = [
             'callback' => $callback,
             'periodicity' => $periodicity,
-            'lastExecution' => null
+            'lastExecution' => null,
+            'autoRemove' => $autoRemove
         ];
     }
 
@@ -67,10 +69,11 @@ class Scheduler
      * @param string $name Nom de la tâche à mettre à jour
      * @param callable $callback Nouvelle fonction à exécuter
      * @param string $periodicity Nouvelle périodicité
+     * @param bool $autoRemove Supprimer automatiquement après exécution
      * @return void
      * @throws \InvalidArgumentException Si la tâche n'existe pas
      */
-    public function updateTask(string $name, callable $callback, string $periodicity = '*'): void
+    public function updateTask(string $name, callable $callback, string $periodicity = '*', bool $autoRemove = false): void
     {
         if (!isset($this->tasks[$name])) {
             throw new \InvalidArgumentException("Task with name '{$name}' does not exist.");
@@ -82,7 +85,8 @@ class Scheduler
         $this->tasks[$name] = [
             'callback' => $callback,
             'periodicity' => $periodicity,
-            'lastExecution' => $lastExecution
+            'lastExecution' => $lastExecution,
+            'autoRemove' => $autoRemove
         ];
     }
 
@@ -98,19 +102,30 @@ class Scheduler
     }
 
     /**
-     * Exécute les tâches qui doivent l'être maintenant
+     * Exécute les tâches dues au moment actuel
      * 
      * @return void
      */
     public function tick(): void
     {
         $currentTime = $this->timeProvider->getCurrentTime();
+        $tasksToRemove = [];
         
         foreach ($this->tasks as $name => &$task) {
             if ($this->shouldExecute($task, $currentTime)) {
-                call_user_func($task['callback']);
+                $task['callback']();
                 $task['lastExecution'] = $currentTime;
+                
+                // Marquer pour suppression si auto_remove activé
+                if ($task['autoRemove'] ?? false) {
+                    $tasksToRemove[] = $name;
+                }
             }
+        }
+        
+        // Supprimer les tâches marquées
+        foreach ($tasksToRemove as $name) {
+            unset($this->tasks[$name]);
         }
     }
 
