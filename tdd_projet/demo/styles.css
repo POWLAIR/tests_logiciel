@@ -248,6 +248,43 @@ body::before {
     color: var(--text-muted);
 }
 
+/* Task Type Selector */
+.task-type-selector {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) 0;
+}
+
+.radio-label,
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: color var(--transition-base);
+}
+
+.radio-label:hover,
+.checkbox-label:hover {
+    color: var(--text-primary);
+}
+
+.radio-label input[type="radio"],
+.checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+/* Date Time Picker */
+.date-time-picker {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+
 /* Button Styles */
 .btn {
     padding: var(--spacing-md) var(--spacing-lg);
