@@ -317,4 +317,79 @@ class LaboratoryTest extends TestCase
         $this->assertSame(2.0, $laboratory->getQuantity('sugar'));      // 3 - (0.5*2)
         $this->assertSame(2.0, $laboratory->getQuantity('advanced_solution'));
     }
+
+    /**
+     * @test
+     * Iteration 4.6 - Make with circular reactions
+     * 
+     * Example: A = B + C, and C = 0.2*A + D
+     * To make 1 A, we need: 1 B, 0.5 C, 0.1 A (already included in C), 0.5 D
+     * Final ingredients for 1 A: 1 B, 0.5 D, and some initial A to bootstrap
+     */
+    public function it_can_resolve_circular_reactions(): void
+    {
+        // Create circular reactions:
+        // A = 1 B + 0.5 C
+        // C = 0.2 A + 0.5 D
+        $reactions = [
+            'a' => [
+                ['quantity' => 1.0, 'substance' => 'b'],
+                ['quantity' => 0.5, 'substance' => 'c']
+            ],
+            'c' => [
+                ['quantity' => 0.2, 'substance' => 'a'],
+                ['quantity' => 0.5, 'substance' => 'd']
+            ]
+        ];
+        
+        $laboratory = new Laboratory(['b', 'd'], $reactions);
+        
+        // Add stock including initial A to bootstrap the circular reaction
+        $laboratory->add('b', 10.0);
+        $laboratory->add('d', 10.0);
+        $laboratory->add('a', 1.0);  // Initial A to start the cycle
+        
+        // Make 1 unit of A using circular resolution
+        $produced = $laboratory->makeCircular('a', 1.0);
+        
+        // Should be able to produce 1 unit
+        $this->assertGreaterThan(0.0, $produced);
+        
+        // Verify stock consumption
+        $this->assertLessThan(10.0, $laboratory->getQuantity('b'));
+        $this->assertLessThan(10.0, $laboratory->getQuantity('d'));
+    }
+
+    /**
+     * @test
+     * Iteration 4.6 - Circular reactions without initial product
+     * 
+     * Should still work by resolving to base ingredients
+     */
+    public function it_resolves_circular_to_base_ingredients(): void
+    {
+        // Simpler circular case
+        // X = 1 Y + 0.3 X
+        // Resolving: X needs 1 Y + 0.3 X
+        // So: 1 X = 1 Y + 0.3(1 Y + 0.3 X) = 1 Y + 0.3 Y + 0.09 X
+        // So: 0.91 X = 1.3 Y
+        // So: 1 X = 1.3/0.91 ≈ 1.428 Y
+        $reactions = [
+            'x' => [
+                ['quantity' => 1.0, 'substance' => 'y'],
+                ['quantity' => 0.3, 'substance' => 'x']
+            ]
+        ];
+        
+        $laboratory = new Laboratory(['y'], $reactions);
+        $laboratory->add('y', 10.0);
+        
+        $produced = $laboratory->makeCircular('x', 1.0);
+        
+        // Should produce 1 unit of X
+        $this->assertEqualsWithDelta(1.0, $produced, 0.01);
+        
+        // Should consume approximately 1.428 Y
+        $this->assertEqualsWithDelta(8.572, $laboratory->getQuantity('y'), 0.01);
+    }
 }
