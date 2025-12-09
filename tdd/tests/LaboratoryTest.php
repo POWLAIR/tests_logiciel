@@ -68,4 +68,59 @@ class LaboratoryTest extends TestCase
         
         $laboratory->getQuantity('unknown');
     }
+
+    /**
+     * @test
+     * Iteration 2.1 - Add quantity to existing substance
+     */
+    public function it_can_add_quantity_to_existing_substance(): void
+    {
+        $laboratory = new Laboratory(['water', 'salt']);
+        
+        $laboratory->add('water', 5.5);
+        $this->assertSame(5.5, $laboratory->getQuantity('water'));
+        
+        $laboratory->add('water', 3.0);
+        $this->assertSame(8.5, $laboratory->getQuantity('water'));
+    }
+
+    /**
+     * @test
+     * Iteration 2.2 - Add zero quantity
+     */
+    public function it_can_add_zero_quantity(): void
+    {
+        $laboratory = new Laboratory(['water']);
+        
+        $laboratory->add('water', 0.0);
+        $this->assertSame(0.0, $laboratory->getQuantity('water'));
+    }
+
+    /**
+     * @test
+     * Iteration 2.3 - Add negative quantity throws exception
+     */
+    public function it_rejects_negative_quantity(): void
+    {
+        $laboratory = new Laboratory(['water']);
+        
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Quantity must be non-negative');
+        
+        $laboratory->add('water', -5.0);
+    }
+
+    /**
+     * @test
+     * Iteration 2.4 - Add to unknown substance throws exception
+     */
+    public function it_rejects_adding_to_unknown_substance(): void
+    {
+        $laboratory = new Laboratory(['water']);
+        
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown substance');
+        
+        $laboratory->add('unknown', 5.0);
+    }
 }
