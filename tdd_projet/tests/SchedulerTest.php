@@ -486,7 +486,7 @@ class SchedulerTest extends TestCase
         
         // Tâche quotidienne à 9h
         $scheduler->scheduleTask('daily-9am', $callback, '0 9 * * *');
-        $nextExecution = $scheduler->getNextExecution('daily-9am');
+        $nextEx = $scheduler->getNextExecution('daily-9am');
         $this->assertNotNull($nextExecution);
         $this->assertEquals('09:00', date('H:i', $nextExecution));
         $this->assertEquals('2025-01-15', date('Y-m-d', $nextExecution));
@@ -500,5 +500,53 @@ class SchedulerTest extends TestCase
         // Tâche inexistante
         $nextExecution = $scheduler->getNextExecution('non-existent');
         $this->assertNull($nextExecution);
+    }
+
+    /**
+     * 🔴 RED - Iteration 17.1
+     * Peut récupérer toutes les exécutions dans une plage de dates
+     * ESSENTIEL pour afficher le calendrier !
+     */
+    public function testCanGetExecutionsInDateRange(): void
+    {
+        // Période : 1-7 janvier 2025
+        $start = strtotime('2025-01-01 00:00:00');
+        $end = strtotime('2025-01-07 23:59:59');
+        
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider($start);
+        $scheduler = new Scheduler($timeProvider);
+        
+        $callback = function() {};
+        
+        // Tâche quotidienne à 9h
+        $scheduler->scheduleTask('daily-9am', $callback, '0 9 * * *');
+        
+        // Tâche le 1er du mois à 14h
+        $scheduler->scheduleTask('monthly-1st', $callback, '0 14 1 * *');
+        
+        // Tâche one-time le 5 janvier
+        $scheduler->scheduleTask('meeting', $callback, '@2025-01-05 10:00');
+        
+        // Récupérer toutes les exécutions entre le 1er et le 7 janvier
+        $executions = $scheduler->getExecutionsInRange($start, $end);
+        
+        // Vérifier la structure
+        $this->assertIsArray($executions);
+        $this->assertArrayHasKey('daily-9am', $executions);
+        $this->assertArrayHasKey('monthly-1st', $executions);
+        $this->assertArrayHasKey('meeting', $executions);
+        
+        // daily-9am devrait avoir 7 exécutions (1er au 7 janvier à 9h)
+        $this->assertCount(7, $executions['daily-9am']);
+        $this->assertEquals('2025-01-01 09:00', date('Y-m-d H:i', $executions['daily-9am'][0]));
+        $this->assertEquals('2025-01-07 09:00', date('Y-m-d H:i', $executions['daily-9am'][6]));
+        
+        // monthly-1st devrait avoir 1 exécution (1er janvier à 14h)
+        $this->assertCount(1, $executions['monthly-1st']);
+        $this->assertEquals('2025-01-01 14:00', date('Y-m-d H:i', $executions['monthly-1st'][0]));
+        
+        // meeting devrait avoir 1 exécution (5 janvier à 10h)
+        $this->assertCount(1, $executions['meeting']);
+        $this->assertEquals('2025-01-05 10:00', date('Y-m-d H:i', $executions['meeting'][0]));
     }
 }
