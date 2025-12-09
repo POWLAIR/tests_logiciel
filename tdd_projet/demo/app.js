@@ -1,0 +1,293 @@
+// Scheduler UI Application
+class SchedulerUI {
+    constructor() {
+        this.tasks = new Map();
+        this.currentTime = new Date('2025-01-15T08:00:00');
+        this.executionLog = [];
+        this.totalExecutions = 0;
+
+        this.initializeElements();
+        this.attachEventListeners();
+        this.updateDisplay();
+    }
+
+    initializeElements() {
+        // Form elements
+        this.taskNameInput = document.getElementById('task-name');
+        this.taskPeriodicitySelect = document.getElementById('task-periodicity');
+        this.addTaskBtn = document.getElementById('add-task-btn');
+
+        // Display elements
+        this.tasksList = document.getElementById('tasks-list');
+        this.executionLogEl = document.getElementById('execution-log');
+        this.totalTasksEl = document.getElementById('total-tasks');
+        this.totalExecutionsEl = document.getElementById('total-executions');
+        this.currentTimeEl = document.getElementById('current-time');
+        this.simulationTimeEl = document.getElementById('simulation-time');
+        this.simulationDateEl = document.getElementById('simulation-date');
+
+        // Control buttons
+        this.tickBtn = document.getElementById('tick-btn');
+        this.advanceHourBtn = document.getElementById('advance-hour-btn');
+        this.advanceDayBtn = document.getElementById('advance-day-btn');
+        this.resetBtn = document.getElementById('reset-btn');
+    }
+
+    attachEventListeners() {
+        this.addTaskBtn.addEventListener('click', () => this.addTask());
+        this.taskNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addTask();
+        });
+
+        this.tickBtn.addEventListener('click', () => this.tick());
+        this.advanceHourBtn.addEventListener('click', () => this.advanceTime(60));
+        this.advanceDayBtn.addEventListener('click', () => this.advanceTime(24 * 60));
+        this.resetBtn.addEventListener('click', () => this.reset());
+    }
+
+    addTask() {
+        const name = this.taskNameInput.value.trim();
+        const periodicity = this.taskPeriodicitySelect.value;
+
+        if (!name) {
+            this.showNotification('Veuillez entrer un nom de tâche', 'error');
+            return;
+        }
+
+        if (this.tasks.has(name)) {
+            this.showNotification('Une tâche avec ce nom existe déjà', 'error');
+            return;
+        }
+
+        const task = {
+            name,
+            periodicity,
+            lastExecution: null,
+            executionCount: 0
+        };
+
+        this.tasks.set(name, task);
+        this.taskNameInput.value = '';
+        this.renderTasks();
+        this.updateStats();
+        this.showNotification(`Tâche "${name}" ajoutée !`, 'success');
+    }
+
+    removeTask(name) {
+        this.tasks.delete(name);
+        this.renderTasks();
+        this.updateStats();
+        this.showNotification(`Tâche "${name}" supprimée`, 'info');
+    }
+
+    tick() {
+        this.currentTime = new Date(this.currentTime.getTime() + 60 * 1000);
+
+        let executed = 0;
+        this.tasks.forEach((task, name) => {
+            if (this.shouldExecute(task)) {
+                this.executeTask(task);
+                executed++;
+            }
+        });
+
+        this.updateDisplay();
+
+        if (executed > 0) {
+            this.showNotification(`${executed} tâche(s) exécutée(s)`, 'success');
+        }
+    }
+
+    shouldExecute(task) {
+        const { periodicity, lastExecution } = task;
+        const currentTimestamp = this.currentTime.getTime();
+
+        // Pour '*' (chaque minute)
+        if (periodicity === '*') {
+            if (!lastExecution) return true;
+            const elapsed = (currentTimestamp - lastExecution) / 1000;
+            return elapsed >= 60;
+        }
+
+        // Pour '*/N' (toutes les N minutes)
+        const matchMinutes = periodicity.match(/^\*\/(\d+)$/);
+        if (matchMinutes) {
+            if (!lastExecution) return true;
+            const minutes = parseInt(matchMinutes[1]);
+            const elapsed = (currentTimestamp - lastExecution) / 1000;
+            return elapsed >= (minutes * 60);
+        }
+
+        // Pour '0 H * * *' (heures fixes)
+        const matchHourly = periodicity.match(/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/);
+        if (matchHourly) {
+            const targetMinute = parseInt(matchHourly[1]);
+            const targetHour = parseInt(matchHourly[2]);
+            const currentHour = this.currentTime.getHours();
+            const currentMinute = this.currentTime.getMinutes();
+            const currentDay = this.currentTime.toDateString();
+
+            if (currentHour !== targetHour || currentMinute !== targetMinute) {
+                return false;
+            }
+
+            if (!lastExecution) return true;
+
+            const lastDay = new Date(lastExecution).toDateString();
+            return currentDay !== lastDay;
+        }
+
+        // Pour '0 H * * D' (jours de la semaine)
+        const matchWeekly = periodicity.match(/^(\d+)\s+(\d+)\s+\*\s+\*\s+(\d+)$/);
+        if (matchWeekly) {
+            const targetMinute = parseInt(matchWeekly[1]);
+            const targetHour = parseInt(matchWeekly[2]);
+            const targetDay = parseInt(matchWeekly[3]);
+            const currentHour = this.currentTime.getHours();
+            const currentMinute = this.currentTime.getMinutes();
+            const currentDay = this.currentTime.getDay();
+            const currentDayStr = this.currentTime.toDateString();
+
+            if (currentDay !== targetDay) return false;
+            if (currentHour !== targetHour || currentMinute !== targetMinute) return false;
+
+            if (!lastExecution) return true;
+
+            const lastDayStr = new Date(lastExecution).toDateString();
+            return currentDayStr !== lastDayStr;
+        }
+
+        return false;
+    }
+
+    executeTask(task) {
+        task.lastExecution = this.currentTime.getTime();
+        task.executionCount++;
+        this.totalExecutions++;
+
+        const logEntry = {
+            time: this.formatTime(this.currentTime),
+            task: task.name,
+            message: `Exécutée (${task.executionCount}x)`
+        };
+
+        this.executionLog.unshift(logEntry);
+        if (this.executionLog.length > 50) {
+            this.executionLog.pop();
+        }
+
+        this.renderLog();
+    }
+
+    advanceTime(minutes) {
+        const ticksNeeded = minutes;
+
+        for (let i = 0; i < ticksNeeded; i++) {
+            this.tick();
+        }
+
+        this.showNotification(`Avancé de ${minutes} minute(s)`, 'info');
+    }
+
+    reset() {
+        this.tasks.clear();
+        this.currentTime = new Date('2025-01-15T08:00:00');
+        this.executionLog = [];
+        this.totalExecutions = 0;
+
+        this.renderTasks();
+        this.renderLog();
+        this.updateDisplay();
+        this.showNotification('Scheduler réinitialisé', 'info');
+    }
+
+    renderTasks() {
+        if (this.tasks.size === 0) {
+            this.tasksList.innerHTML = '<div class="log-empty">Aucune tâche planifiée</div>';
+            return;
+        }
+
+        this.tasksList.innerHTML = Array.from(this.tasks.values()).map(task => `
+            <div class="task-item">
+                <div class="task-header">
+                    <span class="task-name">${task.name}</span>
+                    <div class="task-actions">
+                        <button class="task-btn" onclick="schedulerUI.removeTask('${task.name}')" title="Supprimer">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+                <div class="task-info">
+                    <span class="task-badge">${this.getPeriodicityLabel(task.periodicity)}</span>
+                    <span>${task.executionCount} exécution(s)</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    renderLog() {
+        if (this.executionLog.length === 0) {
+            this.executionLogEl.innerHTML = '<div class="log-empty">Aucune exécution pour le moment...</div>';
+            return;
+        }
+
+        this.executionLogEl.innerHTML = this.executionLog.map(entry => `
+            <div class="log-entry">
+                <span class="log-time">${entry.time}</span>
+                <span class="log-task">${entry.task}</span>
+                <span class="log-message">${entry.message}</span>
+            </div>
+        `).join('');
+    }
+
+    updateDisplay() {
+        this.simulationTimeEl.textContent = this.formatTime(this.currentTime);
+        this.simulationDateEl.textContent = this.formatDate(this.currentTime);
+        this.currentTimeEl.textContent = this.formatTime(this.currentTime);
+        this.updateStats();
+    }
+
+    updateStats() {
+        this.totalTasksEl.textContent = this.tasks.size;
+        this.totalExecutionsEl.textContent = this.totalExecutions;
+    }
+
+    formatTime(date) {
+        return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    formatDate(date) {
+        return date.toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            weekday: 'long'
+        });
+    }
+
+    getPeriodicityLabel(periodicity) {
+        const labels = {
+            '*': 'Chaque minute',
+            '*/2': 'Toutes les 2 min',
+            '*/5': 'Toutes les 5 min',
+            '*/10': 'Toutes les 10 min',
+            '0 9 * * *': '9h tous les jours',
+            '0 14 * * *': '14h tous les jours',
+            '0 9 * * 1': 'Lundi 9h',
+            '0 9 * * 5': 'Vendredi 9h'
+        };
+        return labels[periodicity] || periodicity;
+    }
+
+    showNotification(message, type = 'info') {
+        // Simple console log for now - could be enhanced with toast notifications
+        const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+        console.log(`${icon} ${message}`);
+    }
+}
+
+// Initialize the application
+let schedulerUI;
+document.addEventListener('DOMContentLoaded', () => {
+    schedulerUI = new SchedulerUI();
+});
