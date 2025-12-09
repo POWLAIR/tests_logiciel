@@ -177,7 +177,7 @@ echo $executionCount; // 2
 - [x] **Étape 9** : Périodicité heures fixes (`0 H * * *`)
 - [x] **Étape 10** : Périodicité jours de la semaine (`0 H * * D`)
 - [x] **Étape 11** : Méthode `updateTask()`
-- [ ] **Étape 12 (bonus)** : Interface graphique web
+- [x] **Étape 12** : Interface graphique web interactive
 
 ## 📊 Historique Git
 
