@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
@@ -41,9 +43,21 @@
             <!-- Left Panel: Task Management -->
             <section class="panel task-panel">
                 <h2 class="panel-title">📋 Gestion des Tâches</h2>
-                
+
                 <div class="add-task-form">
                     <input type="text" id="task-name" class="input" placeholder="Nom de la tâche">
+
+                    <div class="task-type-selector">
+                        <label class="radio-label">
+                            <input type="radio" name="task-type" value="recurring" checked>
+                            <span>Récurrente</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="task-type" value="one-time">
+                            <span>Date unique</span>
+                        </label>
+                    </div>
+
                     <select id="task-periodicity" class="input">
                         <option value="*">Chaque minute</option>
                         <option value="*/2">Toutes les 2 minutes</option>
@@ -53,7 +67,20 @@
                         <option value="0 14 * * *">Tous les jours à 14h</option>
                         <option value="0 9 * * 1">Lundis à 9h</option>
                         <option value="0 9 * * 5">Vendredis à 9h</option>
+                        <option value="0 9 1 * *">1er du mois à 9h</option>
+                        <option value="0 9 15 * *">15 du mois à 9h</option>
                     </select>
+
+                    <div id="date-time-picker" class="date-time-picker" style="display: none;">
+                        <input type="date" id="task-date" class="input">
+                        <input type="time" id="task-time" class="input" value="09:00">
+                    </div>
+
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="auto-remove">
+                        <span>Auto-supprimer après exécution</span>
+                    </label>
+
                     <button id="add-task-btn" class="btn btn-primary">
                         <span>➕</span> Ajouter
                     </button>
@@ -67,7 +94,7 @@
             <!-- Right Panel: Time Control & Logs -->
             <section class="panel control-panel">
                 <h2 class="panel-title">⚙️ Contrôle Temporel</h2>
-                
+
                 <div class="time-controls">
                     <div class="time-display">
                         <div class="time-label">Heure actuelle</div>
@@ -97,8 +124,44 @@
                 </div>
             </section>
         </main>
+
+        <!-- Calendar Section -->
+        <section class="calendar-section">
+            <div class="panel calendar-panel">
+                <div class="calendar-header">
+                    <button id="prev-month-btn" class="btn-nav">◀</button>
+                    <h2 class="calendar-title" id="calendar-title">Janvier 2025</h2>
+                    <button id="next-month-btn" class="btn-nav">▶</button>
+                </div>
+
+                <div class="calendar-grid">
+                    <div class="calendar-day-header">Dim</div>
+                    <div class="calendar-day-header">Lun</div>
+                    <div class="calendar-day-header">Mar</div>
+                    <div class="calendar-day-header">Mer</div>
+                    <div class="calendar-day-header">Jeu</div>
+                    <div class="calendar-day-header">Ven</div>
+                    <div class="calendar-day-header">Sam</div>
+
+                    <!-- Days will be generated dynamically -->
+                    <div id="calendar-days"></div>
+                </div>
+
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <span class="legend-badge badge-current">●</span>
+                        <span>Jour actuel</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-badge badge-has-tasks">●</span>
+                        <span>Tâches planifiées</span>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
 
     <script src="app.js"></script>
 </body>
+
 </html>
