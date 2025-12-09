@@ -152,6 +152,7 @@ class SchedulerUI {
 
         this.renderTasks();
         this.updateStats();
+        this.updateCalendar();
         this.showNotification(`Tâche "${name}" ajoutée !`, 'success');
     }
 
@@ -277,7 +278,14 @@ class SchedulerUI {
         this.tasks.delete(name);
         this.renderTasks();
         this.updateStats();
+        this.updateCalendar();
         this.showNotification(`Tâche "${name}" supprimée`, 'info');
+    }
+
+    updateCalendar() {
+        if (window.calendarUI) {
+            window.calendarUI.render();
+        }
     }
 
     tick() {
@@ -667,6 +675,71 @@ class SchedulerUI {
         const timeStr = nextDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
         return `<span class="next-exec">⏱️ Prochaine : ${dateStr} ${timeStr} <em>(${countdown})</em></span>`;
+    }
+
+    getExecutionsInRange(startTime, endTime) {
+        const result = {};
+
+        this.tasks.forEach((task, name) => {
+            const executions = [];
+            const { periodicity } = task;
+
+            // For one-time tasks
+            const matchOneTime = periodicity.match(/^@(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/);
+            if (matchOneTime) {
+                const targetDate = new Date(
+                    parseInt(matchOneTime[1]),
+                    parseInt(matchOneTime[2]) - 1,
+                    parseInt(matchOneTime[3]),
+                    parseInt(matchOneTime[4]),
+                    parseInt(matchOneTime[5])
+                );
+                const targetTimestamp = targetDate.getTime();
+
+                if (targetTimestamp >= startTime && targetTimestamp <= endTime) {
+                    executions.push(targetTimestamp);
+                }
+            } else {
+                // For recurring tasks, iterate through each day
+                let currentDay = new Date(startTime);
+                currentDay.setHours(0, 0, 0, 0);
+
+                while (currentDay.getTime() <= endTime) {
+                    // Test each hour and minute of the day
+                    for (let hour = 0; hour < 24; hour++) {
+                        for (let minute = 0; minute < 60; minute++) {
+                            const testTime = new Date(currentDay);
+                            testTime.setHours(hour, minute, 0, 0);
+                            const testTimestamp = testTime.getTime();
+
+                            if (testTimestamp >= startTime && testTimestamp <= endTime) {
+                                const mockTask = {
+                                    periodicity: periodicity,
+                                    lastExecution: null
+                                };
+
+                                if (this.shouldExecute(mockTask, testTimestamp)) {
+                                    executions.push(testTimestamp);
+                                    break; // Only one execution per hour/minute combination
+                                }
+                            }
+                        }
+                        if (executions.length > 0 && executions[executions.length - 1] >= currentDay.getTime() &&
+                            executions[executions.length - 1] < currentDay.getTime() + 86400000) {
+                            break; // Found execution for this day
+                        }
+                    }
+
+                    currentDay.setDate(currentDay.getDate() + 1);
+                }
+            }
+
+            if (executions.length > 0) {
+                result[name] = executions;
+            }
+        });
+
+        return result;
     }
 
     getPeriodicityLabel(periodicity) {
