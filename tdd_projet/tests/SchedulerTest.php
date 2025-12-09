@@ -160,4 +160,68 @@ class SchedulerTest extends TestCase
         // Tenter de planifier une tâche avec le même nom doit lever une exception
         $scheduler->scheduleTask('my-task', $callback);
     }
+
+    /**
+     * 🔴 RED - Iteration 9.1
+     * tick() gère correctement plusieurs tâches avec périodicités différentes
+     */
+    public function testTickHandlesMultipleTasksWithDifferentPeriodicities(): void
+    {
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(0);
+        $scheduler = new Scheduler($timeProvider);
+        
+        $count1 = 0;
+        $count2 = 0;
+        $count3 = 0;
+        
+        $callback1 = function() use (&$count1) { $count1++; };
+        $callback2 = function() use (&$count2) { $count2++; };
+        $callback3 = function() use (&$count3) { $count3++; };
+        
+        // 3 tâches avec périodicités différentes
+        $scheduler->scheduleTask('every-minute', $callback1, '*');
+        $scheduler->scheduleTask('every-2-minutes', $callback2, '*/2');
+        $scheduler->scheduleTask('every-5-minutes', $callback3, '*/5');
+        
+        // T=0 : toutes s'exécutent
+        $scheduler->tick();
+        $this->assertEquals(1, $count1);
+        $this->assertEquals(1, $count2);
+        $this->assertEquals(1, $count3);
+        
+        // T=60s (1 min) : seule 'every-minute' s'exécute
+        $timeProvider->advanceTime(60);
+        $scheduler->tick();
+        $this->assertEquals(2, $count1);
+        $this->assertEquals(1, $count2);
+        $this->assertEquals(1, $count3);
+        
+        // T=120s (2 min) : 'every-minute' et 'every-2-minutes'
+        $timeProvider->advanceTime(60);
+        $scheduler->tick();
+        $this->assertEquals(3, $count1);
+        $this->assertEquals(2, $count2);
+        $this->assertEquals(1, $count3);
+        
+        // T=180s (3 min) : seule 'every-minute'
+        $timeProvider->advanceTime(60);
+        $scheduler->tick();
+        $this->assertEquals(4, $count1);
+        $this->assertEquals(2, $count2);
+        $this->assertEquals(1, $count3);
+        
+        // T=240s (4 min) : 'every-minute' et 'every-2-minutes'
+        $timeProvider->advanceTime(60);
+        $scheduler->tick();
+        $this->assertEquals(5, $count1);
+        $this->assertEquals(3, $count2);
+        $this->assertEquals(1, $count3);
+        
+        // T=300s (5 min) : toutes s'exécutent
+        $timeProvider->advanceTime(60);
+        $scheduler->tick();
+        $this->assertEquals(6, $count1);
+        $this->assertEquals(3, $count2); // Note: elle a déjà exécuté à 240s, donc pas à 300s
+        $this->assertEquals(2, $count3);
+    }
 }
