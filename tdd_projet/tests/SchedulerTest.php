@@ -142,4 +142,22 @@ class SchedulerTest extends TestCase
         $scheduler->tick();
         $this->assertEquals(3, $executionCount, "Devrait exécuter après 15 min total");
     }
+
+    /**
+     * 🔴 RED - Iteration 8.1
+     * Lever une exception si une tâche avec le même nom existe déjà
+     */
+    public function testThrowsExceptionWhenSchedulingDuplicateTaskName(): void
+    {
+        $scheduler = new Scheduler();
+        $callback = function() {};
+        
+        $scheduler->scheduleTask('my-task', $callback);
+        
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('already exists');
+        
+        // Tenter de planifier une tâche avec le même nom doit lever une exception
+        $scheduler->scheduleTask('my-task', $callback);
+    }
 }
