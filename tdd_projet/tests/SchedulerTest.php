@@ -268,4 +268,49 @@ class SchedulerTest extends TestCase
         $scheduler->tick();
         $this->assertEquals(2, $executionCount, "Devrait exécuter le lendemain à 9h");
     }
+
+    /**
+     * 🔴 RED - Iteration 11.1
+     * tick() exécute les tâches à jour de la semaine spécifique (0 H * * D)
+     */
+    public function testTickExecutesTasksOnSpecificDayOfWeek(): void
+    {
+        // 2025-01-13 = Lundi à 8h00
+        $baseTime = strtotime('2025-01-13 08:00:00'); // Monday
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider($baseTime);
+        $scheduler = new Scheduler($timeProvider);
+        
+        $executionCount = 0;
+        $callback = function() use (&$executionCount) {
+            $executionCount++;
+        };
+        
+        // Tâche programmée pour lundis à 9h00 (0 9 * * 1)
+        // 0=Dimanche, 1=Lundi, 2=Mardi, ..., 6=Samedi
+        $scheduler->scheduleTask('monday-9am', $callback, '0 9 * * 1');
+        
+        // Lundi 8h00 : ne doit PAS exécuter (pas encore 9h)
+        $scheduler->tick();
+        $this->assertEquals(0, $executionCount, "Ne devrait pas exécuter avant 9h");
+        
+        // Lundi 9h00 : DOIT exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-13 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Devrait exécuter lundi à 9h");
+        
+        // Mardi 9h00 : ne doit PAS exécuter (pas un lundi)
+        $timeProvider->setCurrentTime(strtotime('2025-01-14 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas exécuter mardi");
+        
+        // Mercredi 9h00 : ne doit PAS exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas exécuter mercredi");
+        
+        // Lundi suivant 9h00 : DOIT exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-20 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(2, $executionCount, "Devrait exécuter lundi suivant à 9h");
+    }
 }
