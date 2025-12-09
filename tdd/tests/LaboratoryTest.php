@@ -204,4 +204,117 @@ class LaboratoryTest extends TestCase
         $laboratory->add('saline', 10.0);
         $this->assertSame(10.0, $laboratory->getQuantity('saline'));
     }
+
+    /**
+     * @test
+     * Iteration 4.1 - Make product with sufficient substances
+     */
+    public function it_can_make_product_with_sufficient_substances(): void
+    {
+        $reactions = [
+            'saline' => [
+                ['quantity' => 2.0, 'substance' => 'water'],
+                ['quantity' => 1.0, 'substance' => 'salt']
+            ]
+        ];
+        
+        $laboratory = new Laboratory(['water', 'salt'], $reactions);
+        $laboratory->add('water', 10.0);
+        $laboratory->add('salt', 5.0);
+        
+        $produced = $laboratory->make('saline', 2.0);
+        
+        $this->assertSame(2.0, $produced);
+        $this->assertSame(6.0, $laboratory->getQuantity('water'));  // 10 - (2*2)
+        $this->assertSame(3.0, $laboratory->getQuantity('salt'));   // 5 - (1*2)
+        $this->assertSame(2.0, $laboratory->getQuantity('saline'));
+    }
+
+    /**
+     * @test
+     * Iteration 4.2 - Make product with insufficient substances
+     */
+    public function it_makes_partial_product_when_insufficient_substances(): void
+    {
+        $reactions = [
+            'saline' => [
+                ['quantity' => 2.0, 'substance' => 'water'],
+                ['quantity' => 1.0, 'substance' => 'salt']
+            ]
+        ];
+        
+        $laboratory = new Laboratory(['water', 'salt'], $reactions);
+        $laboratory->add('water', 5.0);
+        $laboratory->add('salt', 2.0);
+        
+        // Request 3 units, but can only make 2 (limited by salt: 2/1 = 2)
+        $produced = $laboratory->make('saline', 3.0);
+        
+        $this->assertSame(2.0, $produced);
+        $this->assertSame(1.0, $laboratory->getQuantity('water'));  // 5 - (2*2)
+        $this->assertSame(0.0, $laboratory->getQuantity('salt'));   // 2 - (1*2)
+        $this->assertSame(2.0, $laboratory->getQuantity('saline'));
+    }
+
+    /**
+     * @test
+     * Iteration 4.3 - Make with zero stock returns zero
+     */
+    public function it_returns_zero_when_no_substances_available(): void
+    {
+        $reactions = [
+            'saline' => [
+                ['quantity' => 1.0, 'substance' => 'water']
+            ]
+        ];
+        
+        $laboratory = new Laboratory(['water'], $reactions);
+        
+        $produced = $laboratory->make('saline', 5.0);
+        
+        $this->assertSame(0.0, $produced);
+    }
+
+    /**
+     * @test
+     * Iteration 4.4 - Make unknown product throws exception
+     */
+    public function it_throws_exception_for_unknown_product(): void
+    {
+        $laboratory = new Laboratory(['water']);
+        
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown product');
+        
+        $laboratory->make('unknown', 5.0);
+    }
+
+    /**
+     * @test
+     * Iteration 4.5 - Make with products as ingredients
+     */
+    public function it_can_use_products_as_ingredients(): void
+    {
+        $reactions = [
+            'saline' => [
+                ['quantity' => 2.0, 'substance' => 'water'],
+                ['quantity' => 1.0, 'substance' => 'salt']
+            ],
+            'advanced_solution' => [
+                ['quantity' => 1.0, 'substance' => 'saline'],
+                ['quantity' => 0.5, 'substance' => 'sugar']
+            ]
+        ];
+        
+        $laboratory = new Laboratory(['water', 'salt', 'sugar'], $reactions);
+        $laboratory->add('saline', 5.0);  // Add pre-made saline
+        $laboratory->add('sugar', 3.0);
+        
+        $produced = $laboratory->make('advanced_solution', 2.0);
+        
+        $this->assertSame(2.0, $produced);
+        $this->assertSame(3.0, $laboratory->getQuantity('saline'));     // 5 - (1*2)
+        $this->assertSame(2.0, $laboratory->getQuantity('sugar'));      // 3 - (0.5*2)
+        $this->assertSame(2.0, $laboratory->getQuantity('advanced_solution'));
+    }
 }
