@@ -9,7 +9,8 @@ Développé en utilisant une approche **TDD stricte** (Test-Driven Development).
 
 **Classe `Scheduler`** :
 - ✅ `getTasks()` : Énumère les tâches planifiées
-- ✅ `scheduleTask($name, $callback, $periodicity)` : Définit/modifie une tâche
+- ✅ `scheduleTask($name, $callback, $periodicity)` : Définit une nouvelle tâche
+- ✅ `updateTask($name, $callback, $periodicity)` : Modifie une tâche existante
 - ✅ `removeTask($name)` : Supprime une tâche par nom
 - ✅ `tick()` : Exécute les tâches dues à l'instant actuel
 - ✅ **TimeProvider injectable** : Tests déterministes
@@ -18,8 +19,8 @@ Développé en utilisant une approche **TDD stricte** (Test-Driven Development).
 
 - ✅ `*` : Chaque minute
 - ✅ `*/N` : Toutes les N minutes (ex: `*/5` = toutes les 5 minutes)
-- 🔜 Heures fixes (ex: `0 9 * * *`)
-- 🔜 Jours de la semaine (ex: `0 9 * * 1`)
+- ✅ `0 H * * *` : Heures fixes (ex: `0 9 * * *` = tous les jours à 9h)
+- ✅ `0 H * * D` : Jours de la semaine (ex: `0 9 * * 1` = lundis à 9h, 0=Dim, 1=Lun, ..., 6=Sam)
 
 ## 🚀 Installation
 
@@ -39,18 +40,21 @@ php vendor/bin/phpunit
 php vendor/bin/phpunit --testdox
 ```
 
-**Résultat actuel** : ✅ **8 tests, 36 assertions - 100% réussite**
+**Résultat actuel** : ✅ **11 tests, 49 assertions - 100% réussite**
 
 ```
 Scheduler (Scheduler\Tests\Scheduler)
  ✔ Scheduler starts with no tasks
  ✔ Can schedule simple task
  ✔ Can remove task
- ✔ Scheduler accepts time provider
+ ✔ Scheduler accepts time provider  
  ✔ Tick executes tasks every minute
  ✔ Tick executes tasks every n minutes
  ✔ Throws exception when scheduling duplicate task name
  ✔ Tick handles multiple tasks with different periodicities
+ ✔ Tick executes tasks at fixed hour
+ ✔ Tick executes tasks on specific day of week
+ ✔ Can update existing task
 ```
 
 ## 📐 Méthodologie TDD
@@ -61,18 +65,18 @@ Chaque fonctionnalité est implémentée suivant le cycle **Red-Green-Refactor**
 2. 🟢 **GREEN** : Écrire le code minimal pour passer le test
 3. 🔵 **REFACTOR** : Améliorer le code sans changer son comportement
 
-**Chaque étape fait l'objet d'un commit Git distinct** (23 commits actuellement).
+**Chaque étape fait l'objet d'un commit Git distinct** (34+ commits actuellement).
 
 ## 📚 Structure
 
 ```
 tdd_projet/
 ├── src/
-│   ├── Scheduler.php              # Classe principale (118 lignes)
+│   ├── Scheduler.php              # Classe principale (210 lignes)
 │   ├── TimeProviderInterface.php  # Interface temps injectable
 │   └── SystemTimeProvider.php     # Implémentation temps réel
 ├── tests/
-│   ├── SchedulerTest.php          # Tests unitaires (8 tests)
+│   ├── SchedulerTest.php          # Tests unitaires (11 tests)
 │   └── Mocks/
 │       ├── MockTimeProvider.php   # Mock pour contrôler le temps
 │       └── MockCallback.php       # Mock pour compter exécutions
@@ -140,11 +144,14 @@ echo $executionCount; // 2
 - [x] **Étape 6** : Périodicité "toutes les N minutes" (`*/N`)
 - [x] **Étape 7** : Validation (noms uniques)
 - [x] **Étape 8** : Tests multi-tâches
-- [ ] **Étape 9+** : Périodicités avancées (heures, jours, cron complet)
+- [x] **Étape 9** : Périodicité heures fixes (`0 H * * *`)
+- [x] **Étape 10** : Périodicité jours de la semaine (`0 H * * D`)
+- [x] **Étape 11** : Méthode `updateTask()`
+- [ ] **Étape 12 (bonus)** : Interface graphique web
 
 ## 📊 Historique Git
 
-23 commits suivant le pattern TDD :
+34+ commits suivant le pattern TDD :
 
 ```bash
 git log --oneline --graph
@@ -160,16 +167,20 @@ git log --oneline --graph
 🔴 RED → 🟢 GREEN → 🔵 REFACTOR  (every N minutes)
 🔴 RED → 🟢 GREEN → 🔵 REFACTOR  (validation)
 🔴🟢 RED+GREEN → 🔵 REFACTOR     (multi-tasks)
+🔴 RED → 🟢 GREEN → 🔵 REFACTOR  (hourly periodicity)
+🔴 RED → 🟢 GREEN → 🔵 REFACTOR  (weekly periodicity)
+🔴 RED → 🟢 GREEN → 🔵 REFACTOR  (updateTask)
+📚 DOCS
 ```
 
 ## ✅ Conformité Cours
 
 ### Caractéristiques
 
-- ✅ **8 tests unitaires** PHPUnit (36 assertions)
-- ✅ **23 commits Git** suivant Red-Green-Refactor
+- ✅ **11 tests unitaires** PHPUnit (49 assertions)
+- ✅ **34+ commits Git** suivant Red-Green-Refactor
 - ✅ Gestion complète des tâches planifiées
-- ✅ Support de périodicités multiples
+- ✅ Support de 4 types de périodicités
 - ✅ TimeProvider injectable pour tests déterministes
 - ✅ Validation et gestion d'erreurs
 - ✅ TDD strict avec commits à chaque étape
@@ -178,11 +189,12 @@ git log --oneline --graph
 
 ## 🔮 Améliorations Futures
 
-- Support heures fixes (ex: `0 9 * * *` = 9h tous les jours)
-- Support jours de la semaine (ex: `0 9 * * 1` = lundis à 9h)
-- Parser cron complet (5 champs)
+- Support listes de valeurs (ex: `0 9,17 * * *` = 9h et 17h)
+- Support intervalles (ex: `0 9-17 * * *` = 9h à 17h)
+- Parser cron complet avec jour du mois
 - Gestion des exceptions dans les callbacks
 - Logs des exécutions
+- Persistance des tâches (fichier/DB)
 - Interface graphique web (bonus démo)
 
 ---
