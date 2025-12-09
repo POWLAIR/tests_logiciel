@@ -145,6 +145,39 @@ class Scheduler
             return $currentDay !== $lastExecutionDay;
         }
 
+        // Pour '0 H * * D' (à une heure fixe un jour de la semaine spécifique)
+        // Format: minute heure jour mois jour_semaine
+        // 0=Dimanche, 1=Lundi, 2=Mardi, 3=Mercredi, 4=Jeudi, 5=Vendredi, 6=Samedi
+        if (preg_match('/^(\d+)\s+(\d+)\s+\*\s+\*\s+(\d+)$/', $periodicity, $matches)) {
+            $targetMinute = (int)$matches[1];
+            $targetHour = (int)$matches[2];
+            $targetDayOfWeek = (int)$matches[3];
+            
+            $currentHour = (int)date('H', $currentTime);
+            $currentMinute = (int)date('i', $currentTime);
+            $currentDayOfWeek = (int)date('w', $currentTime); // 0=Sunday, 1=Monday, ...
+            $currentDay = date('Y-m-d', $currentTime);
+            
+            // Vérifier si on est le bon jour de la semaine
+            if ($currentDayOfWeek !== $targetDayOfWeek) {
+                return false;
+            }
+            
+            // Vérifier si on est à la bonne heure/minute
+            if ($currentHour !== $targetHour || $currentMinute !== $targetMinute) {
+                return false;
+            }
+            
+            // Si jamais exécuté, exécuter
+            if ($lastExecution === null) {
+                return true;
+            }
+            
+            // Vérifier qu'on n'a pas déjà exécuté aujourd'hui
+            $lastExecutionDay = date('Y-m-d', $lastExecution);
+            return $currentDay !== $lastExecutionDay;
+        }
+
         return false;
     }
 }
