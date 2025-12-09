@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scheduler TDD - Interface de Démonstration</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">
+                    <span class="icon">⏰</span>
+                    Scheduler TDD
+                </h1>
+                <p class="subtitle">Gestionnaire de tâches planifiées avec périodicités cron</p>
+            </div>
+            <div class="stats-bar">
+                <div class="stat">
+                    <span class="stat-value" id="total-tasks">0</span>
+                    <span class="stat-label">Tâches</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="total-executions">0</span>
+                    <span class="stat-label">Exécutions</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="current-time">--:--:--</span>
+                    <span class="stat-label">Temps simulé</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Panel: Task Management -->
+            <section class="panel task-panel">
+                <h2 class="panel-title">📋 Gestion des Tâches</h2>
+                
+                <div class="add-task-form">
+                    <input type="text" id="task-name" class="input" placeholder="Nom de la tâche">
+                    <select id="task-periodicity" class="input">
+                        <option value="*">Chaque minute</option>
+                        <option value="*/2">Toutes les 2 minutes</option>
+                        <option value="*/5">Toutes les 5 minutes</option>
+                        <option value="*/10">Toutes les 10 minutes</option>
+                        <option value="0 9 * * *">Tous les jours à 9h</option>
+                        <option value="0 14 * * *">Tous les jours à 14h</option>
+                        <option value="0 9 * * 1">Lundis à 9h</option>
+                        <option value="0 9 * * 5">Vendredis à 9h</option>
+                    </select>
+                    <button id="add-task-btn" class="btn btn-primary">
+                        <span>➕</span> Ajouter
+                    </button>
+                </div>
+
+                <div id="tasks-list" class="tasks-list">
+                    <!-- Tasks will be added here dynamically -->
+                </div>
+            </section>
+
+            <!-- Right Panel: Time Control & Logs -->
+            <section class="panel control-panel">
+                <h2 class="panel-title">⚙️ Contrôle Temporel</h2>
+                
+                <div class="time-controls">
+                    <div class="time-display">
+                        <div class="time-label">Heure actuelle</div>
+                        <div class="time-value" id="simulation-time">08:00:00</div>
+                        <div class="date-value" id="simulation-date">15 janvier 2025</div>
+                    </div>
+
+                    <div class="control-buttons">
+                        <button id="tick-btn" class="btn btn-success">
+                            <span>▶️</span> Tick (1 min)
+                        </button>
+                        <button id="advance-hour-btn" class="btn btn-info">
+                            <span>⏩</span> +1 heure
+                        </button>
+                        <button id="advance-day-btn" class="btn btn-warning">
+                            <span>⏭️</span> +1 jour
+                        </button>
+                        <button id="reset-btn" class="btn btn-danger">
+                            <span>🔄</span> Reset
+                        </button>
+                    </div>
+                </div>
+
+                <h3 class="panel-subtitle">📜 Journal d'Exécution</h3>
+                <div id="execution-log" class="execution-log">
+                    <div class="log-empty">Aucune exécution pour le moment...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
