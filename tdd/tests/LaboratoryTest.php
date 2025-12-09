@@ -123,4 +123,85 @@ class LaboratoryTest extends TestCase
         
         $laboratory->add('unknown', 5.0);
     }
+
+    /**
+     * @test
+     * Iteration 3.1 - Constructor with reactions parameter (empty)
+     */
+    public function it_can_be_created_with_empty_reactions(): void
+    {
+        $laboratory = new Laboratory(['water', 'salt'], []);
+        
+        $this->assertInstanceOf(Laboratory::class, $laboratory);
+    }
+
+    /**
+     * @test
+     * Iteration 3.2 - Constructor with valid reactions
+     */
+    public function it_can_be_created_with_valid_reactions(): void
+    {
+        $reactions = [
+            'saline' => [
+                ['quantity' => 2.0, 'substance' => 'water'],
+                ['quantity' => 1.0, 'substance' => 'salt']
+            ]
+        ];
+        
+        $laboratory = new Laboratory(['water', 'salt'], $reactions);
+        
+        $this->assertInstanceOf(Laboratory::class, $laboratory);
+    }
+
+    /**
+     * @test
+     * Iteration 3.3 - Constructor validates reaction format
+     */
+    public function it_validates_reaction_format(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        
+        $reactions = [
+            'product' => 'invalid'  // Should be an array of ingredients
+        ];
+        
+        new Laboratory(['water'], $reactions);
+    }
+
+    /**
+     * @test
+     * Iteration 3.3 - Constructor validates reaction uses known substances
+     */
+    public function it_validates_reaction_uses_known_substances(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown substance in reaction');
+        
+        $reactions = [
+            'saline' => [
+                ['quantity' => 1.0, 'substance' => 'unknown']
+            ]
+        ];
+        
+        new Laboratory(['water'], $reactions);
+    }
+
+    /**
+     * @test
+     * Iteration 3.4 - Add works with products (registered in reactions)
+     */
+    public function it_can_add_products_directly(): void
+    {
+        $reactions = [
+            'saline' => [
+                ['quantity' => 2.0, 'substance' => 'water'],
+                ['quantity' => 1.0, 'substance' => 'salt']
+            ]
+        ];
+        
+        $laboratory = new Laboratory(['water', 'salt'], $reactions);
+        
+        $laboratory->add('saline', 10.0);
+        $this->assertSame(10.0, $laboratory->getQuantity('saline'));
+    }
 }
