@@ -28,6 +28,7 @@ class CalendarUI {
     }
 
     render() {
+        console.log('Calendar render() called');
         // Update title
         const monthName = this.currentMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
         this.calendarTitle.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
@@ -40,10 +41,13 @@ class CalendarUI {
         const daysInMonth = lastDay.getDate();
         const startingDayOfWeek = firstDay.getDay();
 
+        console.log(`Rendering calendar for ${monthName}: ${daysInMonth} days, starting on day ${startingDayOfWeek}`);
+
         // Get executions for the month
         const startTime = firstDay.getTime();
         const endTime = lastDay.getTime();
         const executions = this.schedulerUI.getExecutionsInRange(startTime, endTime);
+        console.log('Executions in range:', executions);
 
         // Count executions per day
         const executionsPerDay = {};
@@ -84,17 +88,23 @@ class CalendarUI {
             `;
         }
 
+        console.log('Generated HTML length:', html.length);
+        console.log('Setting innerHTML on calendar-days:', this.calendarDays);
         this.calendarDays.innerHTML = html;
+        console.log('Calendar rendered successfully');
     }
 }
 
 // Initialize calendar when scheduler is ready
 // Wait for schedulerUI to be fully initialized
 function initCalendar() {
+    console.log('initCalendar() called, checking for schedulerUI...');
     if (window.schedulerUI) {
+        console.log('schedulerUI found, creating CalendarUI...');
         window.calendarUI = new CalendarUI(window.schedulerUI);
         console.log('Calendar initialized successfully');
     } else {
+        console.log('schedulerUI not ready yet, retrying in 50ms...');
         // Retry after a short delay
         setTimeout(initCalendar, 50);
     }
@@ -102,8 +112,11 @@ function initCalendar() {
 
 // Start initialization when DOM is ready
 if (document.readyState === 'loading') {
+    console.log('DOM still loading, adding event listener...');
     document.addEventListener('DOMContentLoaded', initCalendar);
 } else {
+    console.log('DOM already loaded, starting init immediately...');
     // DOM already loaded, start immediately
     initCalendar();
 }
+```
