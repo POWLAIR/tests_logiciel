@@ -121,7 +121,7 @@ class CalendarUI {
                     <span class="day-number">${day}</span>
                     <div class="day-tasks">
                         ${tasksForDay.slice(0, 3).map(t => `
-                            <div class="task-mini">
+                            <div class="task-mini" onclick="window.schedulerUI.showTaskDetails('${t.name.replace(/'/g, "\\'")}')">
                                 <span class="task-dot"></span>
                                 <span class="task-time">${t.time}</span>
                                 <span class="task-name">${t.name}</span>
@@ -190,7 +190,7 @@ class CalendarUI {
                     </div>
                     <div class="week-tasks">
                         ${tasks.map(t => `
-                            <div class="task-block">
+                            <div class="task-block" onclick="window.schedulerUI.showTaskDetails('${t.name.replace(/'/g, "\\'")}')">
                                 <span class="task-time">${t.time}</span>
                                 <span class="task-name">${t.name}</span>
                             </div>
@@ -242,7 +242,7 @@ class CalendarUI {
                     <div class="hour-label">${hour.toString().padStart(2, '0')}:00</div>
                     <div class="hour-content">
                         ${hourTasks.map(t => `
-                            <div class="task-event">
+                            <div class="task-event" onclick="window.schedulerUI.showTaskDetails('${t.name.replace(/'/g, "\\'")}')">
                                 <span class="event-time">${t.time}</span>
                                 <span class="event-name">${t.name}</span>
                             </div>
