@@ -7,10 +7,19 @@ class SchedulerUI {
         this.totalExecutions = 0;
         this.editMode = false;
         this.editingTaskName = null;
+        this.toasts = [];
 
         this.initializeElements();
         this.attachEventListeners();
+        this.createToastContainer();
         this.updateDisplay();
+    }
+
+    createToastContainer() {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
     }
 
     initializeElements() {
@@ -772,9 +781,31 @@ class SchedulerUI {
     }
 
     showNotification(message, type = 'info') {
-        // Simple console log for now - could be enhanced with toast notifications
-        const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
-        console.log(`${icon} ${message}`);
+        const icons = {
+            success: '✅',
+            error: '❌',
+            info: 'ℹ️',
+            warning: '⚠️'
+        };
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <span class="toast-icon">${icons[type] || icons.info}</span>
+            <span class="toast-message">${message}</span>
+        `;
+
+        const container = document.getElementById('toast-container');
+        container.appendChild(toast);
+
+        // Trigger animation
+        setTimeout(() => toast.classList.add('show'), 10);
+
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 }
 
