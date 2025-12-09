@@ -44,12 +44,15 @@ class Scheduler
      * 
      * @param string $name Nom de la tâche
      * @param callable $callback Fonction à exécuter
+     * @param string $periodicity Périodicité ('*' = chaque minute)
      * @return void
      */
-    public function scheduleTask(string $name, callable $callback): void
+    public function scheduleTask(string $name, callable $callback, string $periodicity = '*'): void
     {
         $this->tasks[$name] = [
-            'callback' => $callback
+            'callback' => $callback,
+            'periodicity' => $periodicity,
+            'lastExecution' => null
         ];
     }
 
@@ -62,5 +65,45 @@ class Scheduler
     public function removeTask(string $name): void
     {
         unset($this->tasks[$name]);
+    }
+
+    /**
+     * Exécute les tâches qui doivent l'être maintenant
+     * 
+     * @return void
+     */
+    public function tick(): void
+    {
+        $currentTime = $this->timeProvider->getCurrentTime();
+        
+        foreach ($this->tasks as $name => &$task) {
+            if ($this->shouldExecute($task, $currentTime)) {
+                call_user_func($task['callback']);
+                $task['lastExecution'] = $currentTime;
+            }
+        }
+    }
+
+    /**
+     * Détermine si une tâche doit être exécutée
+     * 
+     * @param array $task Données de la tâche
+     * @param int $currentTime Timestamp actuel
+     * @return bool
+     */
+    private function shouldExecute(array $task, int $currentTime): bool
+    {
+        // Si jamais exécutée, l'exécuter
+        if ($task['lastExecution'] === null) {
+            return true;
+        }
+
+        // Pour '*' (chaque minute) : vérifier si 60 secondes sont passées
+        if ($task['periodicity'] === '*') {
+            $elapsed = $currentTime - $task['lastExecution'];
+            return $elapsed >= 60;
+        }
+
+        return false;
     }
 }
