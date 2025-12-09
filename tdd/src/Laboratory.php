@@ -12,11 +12,16 @@ class Laboratory
     /** @var array<string, float> */
     private array $stock = [];
 
+    /** @var array<string, array<array{quantity: float, substance: string}>> */
+    private array $reactions = [];
+
     /**
      * @param array<int, string> $substances List of known substance names
+     * @param array<string, array<array{quantity: float, substance: string}>> $reactions Product reactions
      */
-    public function __construct(array $substances)
+    public function __construct(array $substances, array $reactions = [])
     {
+        // Initialize substances
         $seen = [];
         foreach ($substances as $substance) {
             // Validate substance is a string
@@ -32,6 +37,29 @@ class Laboratory
             $seen[$substance] = true;
             $this->stock[$substance] = 0.0;
         }
+
+        // Validate and store reactions
+        foreach ($reactions as $product => $ingredients) {
+            if (!is_array($ingredients)) {
+                throw new \InvalidArgumentException("Reaction for '{$product}' must be an array");
+            }
+
+            foreach ($ingredients as $ingredient) {
+                if (!is_array($ingredient) || !isset($ingredient['quantity'], $ingredient['substance'])) {
+                    throw new \InvalidArgumentException("Invalid ingredient format in reaction for '{$product}'");
+                }
+
+                $substanceName = $ingredient['substance'];
+                if (!isset($this->stock[$substanceName])) {
+                    throw new \InvalidArgumentException("Unknown substance in reaction: {$substanceName}");
+                }
+            }
+            
+            // Product is also a valid item in stock
+            $this->stock[$product] = 0.0;
+        }
+
+        $this->reactions = $reactions;
     }
 
     /**
