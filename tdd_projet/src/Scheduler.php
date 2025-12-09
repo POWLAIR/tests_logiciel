@@ -170,6 +170,40 @@ class Scheduler
             return $currentDay !== $lastExecutionDay;
         }
 
+        // Pour '@YYYY-MM-DD HH:MM' (tâche one-time à date/heure spécifique)
+        if (preg_match('/^@(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/', $periodicity, $matches)) {
+            $year = (int)$matches[1];
+            $month = (int)$matches[2];
+            $day = (int)$matches[3];
+            $hour = (int)$matches[4];
+            $minute = (int)$matches[5];
+            
+            // Créer le timestamp cible
+            $targetTimestamp = mktime($hour, $minute, 0, $month, $day, $year);
+            
+            // Si déjà exécuté, ne JAMAIS réexécuter
+            if ($lastExecution !== null) {
+                return false;
+            }
+            
+            // Vérifier si on est à l'heure exacte
+            // Tolérance de 60 secondes pour catch le bon moment
+            $currentHour = (int)date('H', $currentTime);
+            $currentMinute = (int)date('i', $currentTime);
+            $currentDay = date('Y-m-d', $currentTime);
+            $targetDay = date('Y-m-d', $targetTimestamp);
+            
+            if ($currentDay !== $targetDay) {
+                return false;
+            }
+            
+            if ($currentHour !== $hour || $currentMinute !== $minute) {
+                return false;
+            }
+            
+            return true;
+        }
+
         // Pour '0 H * * D' (à une heure fixe un jour de la semaine spécifique)
         // Format: minute heure jour mois jour_semaine
         // 0=Dimanche, 1=Lundi, 2=Mardi, 3=Mercredi, 4=Jeudi, 5=Vendredi, 6=Samedi
