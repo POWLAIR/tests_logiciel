@@ -348,4 +348,158 @@ class OfficinetTest extends TestCase
         $this->assertEquals(8, $this->officine->quantite("œil de grenouille"));
         $this->assertEquals(8, $this->officine->quantite("YEUX DE GRENOUILLE"));
     }
+
+    // ========== TESTS AVANCÉS - CONCURRENCE ET ÉTAT ==========
+
+    /**
+     * @test
+     * Test: Préparations multiples successives avec vérification de cohérence
+     */
+    public function testPreparationsMultiplesSuccessives(): void
+    {
+        // Setup: Rentrer tous les ingrédients nécessaires
+        $this->officine->rentrer("20 larmes de brume funèbre");
+        $this->officine->rentrer("10 gouttes de sang de citrouille");
+        $this->officine->rentrer("30 pincées de poudre de lune");
+        $this->officine->rentrer("15 yeux de grenouille");
+        
+        // Étape 1: Préparer 3 fioles de glaires purulentes
+        $nb1 = $this->officine->preparer("3 fioles de glaires purulentes");
+        $this->assertEquals(3, $nb1);
+        $this->assertEquals(14, $this->officine->quantite("larme de brume funèbre")); // 20 - 6
+        $this->assertEquals(7, $this->officine->quantite("goutte de sang de citrouille")); // 10 - 3
+        $this->assertEquals(3, $this->officine->quantite("fiole de glaires purulentes"));
+        
+        // Étape 2: Préparer 2 billes d'âme évanescente
+        $nb2 = $this->officine->preparer("2 billes d'âme évanescente");
+        $this->assertEquals(2, $nb2);
+        $this->assertEquals(24, $this->officine->quantite("pincée de poudre de lune")); // 30 - 6
+        $this->assertEquals(13, $this->officine->quantite("œil de grenouille")); // 15 - 2
+        
+        // Étape 3: Préparer 2 bouffées d'essence de cauchemar
+        $nb3 = $this->officine->preparer("2 bouffées d'essence de cauchemar");
+        $this->assertEquals(2, $nb3);
+        $this->assertEquals(10, $this->officine->quantite("larme de brume funèbre")); // 14 - 4
+        $this->assertEquals(20, $this->officine->quantite("pincée de poudre de lune")); // 24 - 4
+        
+        // Vérification de cohérence globale
+        $this->assertEquals(3, $this->officine->quantite("fiole de glaires purulentes"));
+        $this->assertEquals(2, $this->officine->quantite("bille d'âme évanescente"));
+        $this->assertEquals(2, $this->officine->quantite("bouffée d'essence de cauchemar"));
+    }
+
+    /**
+     * @test
+     * Test: Utiliser une potion avant qu'elle soit créée
+     */
+    public function testPreparerPotionSansPotionPrealable(): void
+    {
+        // Rentrer seulement les radicelles mais PAS les fioles de glaires purulentes
+        $this->officine->rentrer("10 radicelles de racine hurlante");
+        
+        // Tenter de préparer un baton (qui nécessite des fioles)
+        $nb = $this->officine->preparer("2 batons de pâte sépulcrale");
+        
+        // Doit retourner 0 car les fioles ne sont pas disponibles
+        $this->assertEquals(0, $nb);
+        
+        // Les stocks ne doivent pas avoir changé
+        $this->assertEquals(10, $this->officine->quantite("radicelle de racine hurlante"));
+        $this->assertEquals(0, $this->officine->quantite("baton de pâte sépulcrale"));
+    }
+
+    // ========== TESTS AVANCÉS - ROBUSTESSE ==========
+
+    /**
+     * @test
+     * Test: Normalisation avec toutes les variantes d'un nom
+     */
+    public function testNormalisationNomsVariantes(): void
+    {
+        // Rentrer avec différentes variantes (singulier/pluriel, casse)
+        $this->officine->rentrer("2 larme de brume funèbre");
+        $this->officine->rentrer("3 Larme De Brume Funèbre");
+        $this->officine->rentrer("1 LARME DE BRUME FUNÈBRE");
+        $this->officine->rentrer("4 larmes de brume funèbre");
+        $this->officine->rentrer("2 Larmes De Brume Funèbre");
+        $this->officine->rentrer("1 LARMES DE BRUME FUNÈBRE");
+        
+        // Toutes les lectures doivent retourner le même total (13)
+        $this->assertEquals(13, $this->officine->quantite("larme de brume funèbre"));
+        $this->assertEquals(13, $this->officine->quantite("larmes de brume funèbre"));
+        $this->assertEquals(13, $this->officine->quantite("Larme De Brume Funèbre"));
+        $this->assertEquals(13, $this->officine->quantite("LARMES DE BRUME FUNÈBRE"));
+        $this->assertEquals(13, $this->officine->quantite("LaRmE dE bRuMe FuNèBrE"));
+    }
+
+    /**
+     * @test
+     * Test: Parsing robuste avec espaces multiples
+     */
+    public function testParsingAvecEspacesMultiples(): void
+    {
+        // Espaces multiples entre quantité et nom
+        $this->officine->rentrer("5    yeux   de    grenouille");
+        
+        // Doit parser correctement malgré les espaces
+        $this->assertEquals(5, $this->officine->quantite("œil de grenouille"));
+    }
+
+    /**
+     * @test
+     * Test: Stocks avec variantes multiples et préparation
+     */
+    public function testNormalisationDansPreparation(): void
+    {
+        // Rentrer avec variantes
+        $this->officine->rentrer("10 LARMES DE BRUME FUNÈBRE");
+        $this->officine->rentrer("5 goutte de sang de citrouille");
+        
+        // Préparer avec une autre variante
+        $nb = $this->officine->preparer("2 Fioles De Glaires Purulentes");
+        
+        $this->assertEquals(2, $nb);
+        $this->assertEquals(6, $this->officine->quantite("larme de brume funèbre"));
+        $this->assertEquals(3, $this->officine->quantite("Goutte De Sang De Citrouille"));
+        $this->assertEquals(2, $this->officine->quantite("FIOLE DE GLAIRES PURULENTES"));
+    }
+
+    /**
+     * @test
+     * Test: Vérification que les variantes de caractères spéciaux fonctionnent
+     */
+    public function testNormalisationCaracteresSpeciaux(): void
+    {
+        // Avec œ et avec oe
+        $this->officine->rentrer("5 œil de grenouille");
+        $this->officine->rentrer("3 oeil de grenouille");
+        
+        // Les deux doivent pointer vers le même stock
+        $this->assertEquals(8, $this->officine->quantite("œil de grenouille"));
+        $this->assertEquals(8, $this->officine->quantite("oeil de grenouille"));
+        $this->assertEquals(8, $this->officine->quantite("OEIL DE GRENOUILLE"));
+    }
+
+    /**
+     * @test  
+     * Test: Épuisement partiel avec un ingrédient limitant
+     */
+    public function testEpuisementPartielIngredientLimitant(): void
+    {
+        // Pour "soupçon de sels suffocants": 2 crocs + 1 fragment + 1 radicelle
+        // On met un ingrédient en quantité limitée
+        $this->officine->rentrer("100 crocs de troll");
+        $this->officine->rentrer("2 fragments d'écaille de dragonnet"); // Limitant!
+        $this->officine->rentrer("100 radicelles de racine hurlante");
+        
+        // On demande 10 potions mais on ne peut en faire que 2
+        $nb = $this->officine->preparer("10 soupçons de sels suffocants");
+        
+        $this->assertEquals(2, $nb);
+        
+        // Vérifier les stocks
+        $this->assertEquals(96, $this->officine->quantite("croc de troll")); // 100 - 4
+        $this->assertEquals(0, $this->officine->quantite("fragment d'écaille de dragonnet")); // 2 - 2 (épuisé!)
+        $this->assertEquals(98, $this->officine->quantite("radicelle de racine hurlante")); // 100 - 2
+    }
 }
