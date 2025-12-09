@@ -36,4 +36,15 @@ class Scheduler
             'callback' => $callback
         ];
     }
+
+    /**
+     * Supprime une tâche planifiée
+     * 
+     * @param string $name Nom de la tâche à supprimer
+     * @return void
+     */
+    public function removeTask(string $name): void
+    {
+        unset($this->tasks[$name]);
+    }
 }
