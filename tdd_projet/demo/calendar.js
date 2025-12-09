@@ -89,10 +89,21 @@ class CalendarUI {
 }
 
 // Initialize calendar when scheduler is ready
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        if (window.schedulerUI) {
-            window.calendarUI = new CalendarUI(window.schedulerUI);
-        }
-    }, 100);
-});
+// Wait for schedulerUI to be fully initialized
+function initCalendar() {
+    if (window.schedulerUI) {
+        window.calendarUI = new CalendarUI(window.schedulerUI);
+        console.log('Calendar initialized successfully');
+    } else {
+        // Retry after a short delay
+        setTimeout(initCalendar, 50);
+    }
+}
+
+// Start initialization when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCalendar);
+} else {
+    // DOM already loaded, start immediately
+    initCalendar();
+}
