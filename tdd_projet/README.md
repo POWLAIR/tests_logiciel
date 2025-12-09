@@ -20,7 +20,9 @@ Développé en utilisant une approche **TDD stricte** (Test-Driven Development).
 - ✅ `*` : Chaque minute
 - ✅ `*/N` : Toutes les N minutes (ex: `*/5` = toutes les 5 minutes)
 - ✅ `0 H * * *` : Heures fixes (ex: `0 9 * * *` = tous les jours à 9h)
-- ✅ `0 H * * D` : Jours de la semaine (ex: `0 9 * * 1` = lundis à 9h, 0=Dim, 1=Lun, ..., 6=Sam)
+- ✅ `0 H * * D` : Jours de la semaine (ex: `0 9 * * 1` = lundis à 9h)
+- ✅ `0 H D * *` : Jours du mois (ex: `0 9 15 * *` = le 15 du mois à 9h)
+- ✅ `@date` : Tâche unique (ex: `@2025-01-01 12:00`)
 
 ## 🚀 Installation
 
@@ -106,14 +108,12 @@ python3 -m http.server 8000
 ```
 
 **Fonctionnalités de l'UI** :
-- ✅ Ajout/suppression de tâches visuellement
-- ✅ Contrôle du temps simulé (tick, +1h, +1 jour)
-- ✅ Journal d'exécution en temps réel
-- ✅ Statistiques dynamiques
-- ✅ Design dark theme avec animations fluides
-- ✅ Support complet des 4 périodicités
-
-Voir [demo/README.md](demo/README.md) pour plus de détails.
+- ✅ **Calendrier Interactif** : Vues mois, semaine et jour
+- ✅ **Planification Avancée** : Tâches récurrentes et uniques
+- ✅ **Gestion complète** : Ajout, édition, suppression, auto-suppression
+- ✅ **Visualisation** : Prochaine exécution, compte à rebours
+- ✅ **Design** : Thème sombre moderne, responsive
+- ✅ **Contrôle temps** : Simulation accélérée
 
 ## 💻 Utilisation
 
