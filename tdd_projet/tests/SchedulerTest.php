@@ -486,7 +486,7 @@ class SchedulerTest extends TestCase
         
         // Tâche quotidienne à 9h
         $scheduler->scheduleTask('daily-9am', $callback, '0 9 * * *');
-        $nextEx = $scheduler->getNextExecution('daily-9am');
+        $nextExecution = $scheduler->getNextExecution('daily-9am');
         $this->assertNotNull($nextExecution);
         $this->assertEquals('09:00', date('H:i', $nextExecution));
         $this->assertEquals('2025-01-15', date('Y-m-d', $nextExecution));
