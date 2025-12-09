@@ -19,13 +19,25 @@ class CalendarUI {
     }
 
     attachEventListeners() {
-        this.prevMonthBtn.addEventListener('click', () => this.changeMonth(-1));
-        this.nextMonthBtn.addEventListener('click', () => this.changeMonth(1));
+        this.prevMonthBtn.addEventListener('click', () => this.navigate(-1));
+        this.nextMonthBtn.addEventListener('click', () => this.navigate(1));
 
         // View selector buttons
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.changeView(e.target.dataset.view));
         });
+    }
+
+    navigate(delta) {
+        if (this.currentView === 'month') {
+            this.currentMonth.setMonth(this.currentMonth.getMonth() + delta);
+        } else if (this.currentView === 'week') {
+            this.currentMonth.setDate(this.currentMonth.getDate() + (delta * 7));
+        } else {
+            // Day view
+            this.currentMonth.setDate(this.currentMonth.getDate() + delta);
+        }
+        this.render();
     }
 
     changeView(view) {
