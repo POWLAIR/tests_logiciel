@@ -21,4 +21,12 @@ class Laboratory
             $this->stock[$substance] = 0.0;
         }
     }
+
+    /**
+     * Get the quantity of a substance in stock.
+     */
+    public function getQuantity(string $substance): float
+    {
+        return $this->stock[$substance];
+    }
 }
