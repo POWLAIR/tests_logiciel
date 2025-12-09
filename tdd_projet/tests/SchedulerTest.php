@@ -224,4 +224,48 @@ class SchedulerTest extends TestCase
         $this->assertEquals(3, $count2); // Note: elle a déjà exécuté à 240s, donc pas à 300s
         $this->assertEquals(2, $count3);
     }
+
+    /**
+     * 🔴 RED - Iteration 10.1
+     * tick() exécute les tâches à heures fixes (0 H * * *)
+     */
+    public function testTickExecutesTasksAtFixedHour(): void
+    {
+        // Commencer à 8h00 le 2025-01-15
+        $baseTime = strtotime('2025-01-15 08:00:00');
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider($baseTime);
+        $scheduler = new Scheduler($timeProvider);
+        
+        $executionCount = 0;
+        $callback = function() use (&$executionCount) {
+            $executionCount++;
+        };
+        
+        // Tâche programmée pour 9h00 tous les jours (0 9 * * *)
+        $scheduler->scheduleTask('daily-9am', $callback, '0 9 * * *');
+        
+        // 8h00 : ne doit PAS exécuter
+        $scheduler->tick();
+        $this->assertEquals(0, $executionCount, "Ne devrait pas exécuter à 8h");
+        
+        // Avancer à 9h00 : DOIT exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Devrait exécuter à 9h");
+        
+        // 9h30 le même jour : ne doit PAS exécuter (déjà fait aujourd'hui)
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 09:30:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas réexécuter le même jour");
+        
+        // 10h00 le même jour : ne doit PAS exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 10:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas exécuter à 10h");
+        
+        // 9h00 le lendemain : DOIT exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-16 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(2, $executionCount, "Devrait exécuter le lendemain à 9h");
+    }
 }
