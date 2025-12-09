@@ -46,9 +46,14 @@ class Scheduler
      * @param callable $callback Fonction à exécuter
      * @param string $periodicity Périodicité ('*' = chaque minute)
      * @return void
+     * @throws \InvalidArgumentException Si une tâche avec ce nom existe déjà
      */
     public function scheduleTask(string $name, callable $callback, string $periodicity = '*'): void
     {
+        if (isset($this->tasks[$name])) {
+            throw new \InvalidArgumentException("Task with name '{$name}' already exists.");
+        }
+
         $this->tasks[$name] = [
             'callback' => $callback,
             'periodicity' => $periodicity,
