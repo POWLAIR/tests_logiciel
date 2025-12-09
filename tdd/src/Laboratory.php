@@ -45,4 +45,23 @@ class Laboratory
         
         return $this->stock[$substance];
     }
+
+    /**
+     * Add a quantity of a substance to stock.
+     *
+     * @param string $substance The substance name
+     * @param float $quantity The quantity to add (must be non-negative)
+     */
+    public function add(string $substance, float $quantity): void
+    {
+        if ($quantity < 0) {
+            throw new \InvalidArgumentException('Quantity must be non-negative');
+        }
+        
+        if (!isset($this->stock[$substance])) {
+            throw new \InvalidArgumentException("Unknown substance: {$substance}");
+        }
+        
+        $this->stock[$substance] += $quantity;
+    }
 }
