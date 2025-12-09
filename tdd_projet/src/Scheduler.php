@@ -14,6 +14,22 @@ class Scheduler
     private array $tasks = [];
 
     /**
+     * Fournisseur de temps
+     * @var TimeProviderInterface
+     */
+    private TimeProviderInterface $timeProvider;
+
+    /**
+     * Constructeur
+     * 
+     * @param TimeProviderInterface|null $timeProvider Fournisseur de temps (optionnel)
+     */
+    public function __construct(?TimeProviderInterface $timeProvider = null)
+    {
+        $this->timeProvider = $timeProvider ?? new SystemTimeProvider();
+    }
+
+    /**
      * Retourne la liste des tâches planifiées
      * 
      * @return array

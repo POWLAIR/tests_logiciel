@@ -60,4 +60,17 @@ class SchedulerTest extends TestCase
         $this->assertArrayNotHasKey('task1', $tasks);
         $this->assertArrayHasKey('task2', $tasks);
     }
+
+    /**
+     * 🔴 RED - Iteration 5.1
+     * Le Scheduler accepte un TimeProvider injectable
+     */
+    public function testSchedulerAcceptsTimeProvider(): void
+    {
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(1000);
+        $scheduler = new Scheduler($timeProvider);
+        
+        // Le scheduler doit accepter le TimeProvider sans erreur
+        $this->assertInstanceOf(Scheduler::class, $scheduler);
+    }
 }
