@@ -130,6 +130,120 @@ class Scheduler
     }
 
     /**
+     * Récupère le prochain timestamp d'exécution d'une tâche
+     * 
+     * @param string $name Nom de la tâche
+     * @return int|null Timestamp de la prochaine exécution, ou null si tâche inexistante ou déjà exécutée (one-time)
+     */
+    public function getNextExecution(string $name): ?int
+    {
+        if (!isset($this->tasks[$name])) {
+            return null;
+        }
+
+        $task = $this->tasks[$name];
+        $periodicity = $task['periodicity'];
+        $currentTime = $this->timeProvider->getCurrentTime();
+        $lastExecution = $task['lastExecution'];
+
+        // Pour tâches one-time (@YYYY-MM-DD HH:MM)
+        if (preg_match('/^@(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/', $periodicity, $matches)) {
+            $year = (int)$matches[1];
+            $month = (int)$matches[2];
+            $day = (int)$matches[3];
+            $hour = (int)$matches[4];
+            $minute = (int)$matches[5];
+            
+            $targetTimestamp = mktime($hour, $minute, 0, $month, $day, $year);
+            
+            // Si déjà exécutée, pas de prochaine exécution
+            if ($lastExecution !== null) {
+                return null;
+            }
+            
+            return $targetTimestamp;
+        }
+
+        // Pour '*/N' (toutes les N minutes)
+        if (preg_match('/^\*\/(\d+)$/', $periodicity, $matches)) {
+            $minutes = (int)$matches[1];
+            
+            if ($lastExecution === null) {
+                // Première exécution : dans N minutes
+                return $currentTime + ($minutes * 60);
+            }
+            
+            // Prochaine exécution : lastExecution + N minutes
+            return $lastExecution + ($minutes * 60);
+        }
+
+        // Pour '*' (chaque minute)
+        if ($periodicity === '*') {
+            if ($lastExecution === null) {
+                return $currentTime + 60;
+            }
+            return $lastExecution + 60;
+        }
+
+        // Pour '0 H * * *' (heures fixes quotidiennes)
+        if (preg_match('/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/', $periodicity, $matches)) {
+            $targetMinute = (int)$matches[1];
+            $targetHour = (int)$matches[2];
+            
+            $currentDay = date('Y-m-d', $currentTime);
+            $targetToday = strtotime("$currentDay $targetHour:$targetMinute:00");
+            
+            // Si l'heure cible aujourd'hui est passée, c'est demain
+            if ($currentTime >= $targetToday) {
+                return strtotime("+1 day", $targetToday);
+            }
+            
+            return $targetToday;
+        }
+
+        // Pour '0 H * * D' (jour de la semaine)
+        if (preg_match('/^(\d+)\s+(\d+)\s+\*\s+\*\s+(\d+)$/', $periodicity, $matches)) {
+            $targetMinute = (int)$matches[1];
+            $targetHour = (int)$matches[2];
+            $targetDayOfWeek = (int)$matches[3];
+            
+            // Trouver le prochain jour correspondant
+            $current = $currentTime;
+            for ($i = 0; $i < 8; $i++) { // Max 7 jours à chercher
+                $dayOfWeek = (int)date('w', $current);
+                $dayDate = date('Y-m-d', $current);
+                $targetTime = strtotime("$dayDate $targetHour:$targetMinute:00");
+                
+                if ($dayOfWeek === $targetDayOfWeek && $targetTime > $currentTime) {
+                    return $targetTime;
+                }
+                
+                $current = strtotime("+1 day", $current);
+            }
+        }
+
+        // Pour '0 H D * *' (jour du mois)
+        if (preg_match('/^(\d+)\s+(\d+)\s+(\d+)\s+\*\s+\*$/', $periodicity, $matches)) {
+            $targetMinute = (int)$matches[1];
+            $targetHour = (int)$matches[2];
+            $targetDayOfMonth = (int)$matches[3];
+            
+            $currentMonth = date('Y-m', $currentTime);
+            $targetThisMonth = strtotime("$currentMonth-$targetDayOfMonth $targetHour:$targetMinute:00");
+            
+            // Si le jour cible ce mois est passé, c'est le mois prochain
+            if ($targetThisMonth !== false && $currentTime >= $targetThisMonth) {
+                $nextMonth = date('Y-m', strtotime("+1 month", $currentTime));
+                return strtotime("$nextMonth-$targetDayOfMonth $targetHour:$targetMinute:00");
+            }
+            
+            return $targetThisMonth;
+        }
+
+        return null;
+    }
+
+    /**
      * Détermine si une tâche doit être exécutée
      * 
      * @param array $task Données de la tâche
