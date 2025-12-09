@@ -34,7 +34,7 @@ php vendor/bin/phpunit
 php vendor/bin/phpunit --testdox
 ```
 
-**Résultat** : ✅ **19 tests, 38 assertions - 100% réussite**
+**Résultat** : ✅ **21 tests, 43 assertions - 100% réussite**
 
 ## 📐 Méthodologie TDD
 
@@ -44,7 +44,7 @@ Chaque fonctionnalité est implémentée suivant le cycle **Red-Green-Refactor**
 2. 🟢 **GREEN** : Écrire le code minimal pour passer le test
 3. 🔵 **REFACTOR** : Améliorer le code sans changer son comportement
 
-**Chaque étape fait l'objet d'un commit Git distinct** (14 commits au total).
+**Chaque étape fait l'objet d'un commit Git distinct** (18 commits au total).
 
 ## 📚 Structure
 
@@ -53,7 +53,7 @@ tdd/
 ├── src/
 │   └── Laboratory.php       # Classe principale (144 lignes)
 ├── tests/
-│   └── LaboratoryTest.php   # Tests unitaires (19 tests)
+│   └── LaboratoryTest.php   # Tests unitaires (21 tests)
 ├── composer.json
 ├── phpunit.xml
 └── README.md
@@ -99,11 +99,11 @@ echo $lab->getQuantity('saline'); // 2.0
 - [x] **Étape 2** : Méthode `add()`
 - [x] **Étape 3** : Support des réactions et produits
 - [x] **Étape 4** : Méthode `make()` avec production
-- [ ] **Optionnel** : Références circulaires
+- [x] **Optionnel** : Références circulaires ✨
 
 ## 📊 Historique Git
 
-14 commits suivant le pattern TDD :
+18 commits suivant le pattern TDD :
 ```
 🏗️  SETUP
 🔴 RED → 🟢 GREEN → 🔵 REFACTOR  (Étape 1.1)
@@ -112,13 +112,14 @@ echo $lab->getQuantity('saline'); // 2.0
 🔴 RED → 🟢 GREEN                (Étape 2)
 🔴 RED → 🟢 GREEN                (Étape 3)
 🔴 RED → 🟢 GREEN                (Étape 4)
+🔴 RED → 🟢 GREEN + 📚 DOCS       (Optionnel : Circulaire)
 ```
 
 ## ✅ Conformité Cours
 
 ### Caractéristiques
 - ✅ **21 tests** PHPUnit (43 assertions)
-- ✅ **17 commits Git** suivant Red-Green-Refactor
+- ✅ **18 commits Git** suivant Red-Green-Refactor
 - ✅ Substances, réactions, et production de produits
 - ✅ Support des produits comme ingrédients
 - ✅ Production partielle intelligente
