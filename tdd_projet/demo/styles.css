@@ -394,6 +394,11 @@ body::before {
     font-weight: 600;
 }
 
+.badge-auto-remove {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--accent-warning);
+}
+
 /* Time Controls */
 .time-controls {
     margin-bottom: var(--spacing-lg);

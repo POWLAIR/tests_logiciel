@@ -48,6 +48,7 @@ class SchedulerUI {
     addTask() {
         const name = this.taskNameInput.value.trim();
         const periodicity = this.taskPeriodicitySelect.value;
+        const autoRemove = document.getElementById('auto-remove').checked;
 
         if (!name) {
             this.showNotification('Veuillez entrer un nom de tâche', 'error');
@@ -63,11 +64,13 @@ class SchedulerUI {
             name,
             periodicity,
             lastExecution: null,
-            executionCount: 0
+            executionCount: 0,
+            autoRemove
         };
 
         this.tasks.set(name, task);
         this.taskNameInput.value = '';
+        document.getElementById('auto-remove').checked = false;
         this.renderTasks();
         this.updateStats();
         this.showNotification(`Tâche "${name}" ajoutée !`, 'success');
@@ -84,14 +87,28 @@ class SchedulerUI {
         this.currentTime = new Date(this.currentTime.getTime() + 60 * 1000);
 
         let executed = 0;
+        const tasksToRemove = [];
+
         this.tasks.forEach((task, name) => {
             if (this.shouldExecute(task)) {
                 this.executeTask(task);
                 executed++;
+
+                // Mark for removal if autoRemove is enabled
+                if (task.autoRemove) {
+                    tasksToRemove.push(name);
+                }
             }
         });
 
+        // Remove marked tasks
+        tasksToRemove.forEach(name => {
+            this.tasks.delete(name);
+            this.showNotification(`Tâche "${name}" auto-supprimée après exécution`, 'info');
+        });
+
         this.updateDisplay();
+        this.renderTasks();
 
         if (executed > 0) {
             this.showNotification(`${executed} tâche(s) exécutée(s)`, 'success');
@@ -219,6 +236,7 @@ class SchedulerUI {
                 </div>
                 <div class="task-info">
                     <span class="task-badge">${this.getPeriodicityLabel(task.periodicity)}</span>
+                    ${task.autoRemove ? '<span class="task-badge badge-auto-remove">🔄 Auto-suppression</span>' : ''}
                     <span>${task.executionCount} exécution(s)</span>
                 </div>
             </div>
