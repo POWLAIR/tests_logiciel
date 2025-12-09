@@ -341,4 +341,212 @@ class SchedulerTest extends TestCase
         // Vérifier que la périodicité a bien été mise à jour
         $this->assertEquals('*/5', $tasks['my-task']['periodicity']);
     }
+
+    /**
+     * 🔴 RED - Iteration 13.1
+     * tick() exécute les tâches à jour du mois spécifique (0 H D * *)
+     */
+    public function testTickExecutesTasksOnSpecificDayOfMonth(): void
+    {
+        // Test : tâche le 1er de chaque mois à 9h (0 9 1 * *)
+        // 2025-01-01 09:00 = Mercredi
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(strtotime('2025-01-01 08:00:00'));
+        $scheduler = new Scheduler($timeProvider);
+        
+        $executionCount = 0;
+        $callback = function() use (&$executionCount) {
+            $executionCount++;
+        };
+        
+        // Tâche programmée pour le 1er de chaque mois à 9h (0 9 1 * *)
+        $scheduler->scheduleTask('monthly-report', $callback, '0 9 1 * *');
+        
+        // 1er janvier à 8h : ne doit PAS exécuter (pas encore 9h)
+        $scheduler->tick();
+        $this->assertEquals(0, $executionCount, "Ne devrait pas exécuter à 8h");
+        
+        // 1er janvier à 9h : DOIT exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-01 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Devrait exécuter le 1er à 9h");
+        
+        // 2 janvier à 9h : ne doit PAS exécuter (pas le 1er)
+        $timeProvider->setCurrentTime(strtotime('2025-01-02 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas exécuter le 2");
+        
+        // 15 janvier à 9h : ne doit PAS exécuter (pas le 1er)
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas exécuter le 15");
+        
+        // 1er février à 9h : DOIT exécuter (1er du mois suivant)
+        $timeProvider->setCurrentTime(strtotime('2025-02-01 09:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(2, $executionCount, "Devrait exécuter le 1er février");
+        
+        // 1er février à 9h30 : ne doit PAS réexécuter (déjà fait aujourd'hui)
+        $timeProvider->setCurrentTime(strtotime('2025-02-01 09:30:00'));
+        $scheduler->tick();
+        $this->assertEquals(2, $executionCount, "Ne devrait pas réexécuter le même jour");
+    }
+
+    /**
+     * 🔴 RED - Iteration 14.1
+     * Peut planifier une tâche one-time à une date/heure spécifique
+     */
+    public function testCanScheduleOneTimeTask(): void
+    {
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(strtotime('2025-01-15 08:00:00'));
+        $scheduler = new Scheduler($timeProvider);
+        
+        $executionCount = 0;
+        $callback = function() use (&$executionCount) {
+            $executionCount++;
+        };
+        
+        // Format : @YYYY-MM-DD HH:MM (tâche unique)
+        $scheduler->scheduleTask('one-time-meeting', $callback, '@2025-01-15 14:00');
+        
+        // 8h : ne doit PAS exécuter (pas encore l'heure)
+        $scheduler->tick();
+        $this->assertEquals(0, $executionCount, "Ne devrait pas exécuter à 8h");
+        
+        // 14h : DOIT exécuter (heure exacte)
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 14:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Devrait exécuter à 14h");
+        
+        // 14h01 : ne doit PAS réexécuter (c'est une tâche one-time)
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 14:01:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait JAMAIS réexécuter (one-time)");
+        
+        // Lendemain même heure : ne doit PAS exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-16 14:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas exécuter le lendemain");
+        
+        // Vérifier que la tâche existe toujours dans la liste
+        $tasks = $scheduler->getTasks();
+        $this->assertArrayHasKey('one-time-meeting', $tasks);
+    }
+
+    /**
+     * 🔴 RED - Iteration 15.1
+     * Tâche one-time avec auto_remove se supprime après exécution
+     */
+    public function testOneTimeTaskWithAutoRemove(): void
+    {
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(strtotime('2025-01-15 13:00:00'));
+        $scheduler = new Scheduler($timeProvider);
+        
+        $executionCount = 0;
+        $callback = function() use (&$executionCount) {
+            $executionCount++;
+        };
+        
+        // Planifier avec option auto_remove
+        $scheduler->scheduleTask('temp-reminder', $callback, '@2025-01-15 14:00', true);
+        
+        // Vérifier que la tâche existe
+        $tasks = $scheduler->getTasks();
+        $this->assertArrayHasKey('temp-reminder', $tasks);
+        $this->assertCount(1, $tasks);
+        
+        // Avancer à 14h et exécuter
+        $timeProvider->setCurrentTime(strtotime('2025-01-15 14:00:00'));
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Devrait exécuter une fois");
+        
+        // Vérifier que la tâche a été SUPPRIMÉE automatiquement
+        $tasks = $scheduler->getTasks();
+        $this->assertArrayNotHasKey('temp-reminder', $tasks, "Tâche devrait être auto-supprimée");
+        $this->assertCount(0, $tasks);
+    }
+
+    /**
+     * 🔴 RED - Iteration 16.1
+     * Peut récupérer le prochain timestamp d'exécution d'une tâche
+     */
+    public function testCanGetNextExecutionTime(): void
+    {
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(strtotime('2025-01-15 08:30:00'));
+        $scheduler = new Scheduler($timeProvider);
+        
+        $callback = function() {};
+        
+        // Tâche toutes les 5 minutes
+        $scheduler->scheduleTask('every-5-min', $callback, '*/5');
+        
+        // Prochain timestamp devrait être à 08:35 (dans 5 minutes)
+        $nextExecution = $scheduler->getNextExecution('every-5-min');
+        $this->assertNotNull($nextExecution);
+        $this->assertEquals('08:35', date('H:i', $nextExecution));
+        
+        // Tâche quotidienne à 9h
+        $scheduler->scheduleTask('daily-9am', $callback, '0 9 * * *');
+        $nextExecution = $scheduler->getNextExecution('daily-9am');
+        $this->assertNotNull($nextExecution);
+        $this->assertEquals('09:00', date('H:i', $nextExecution));
+        $this->assertEquals('2025-01-15', date('Y-m-d', $nextExecution));
+        
+        // Tâche one-time
+        $scheduler->scheduleTask('meeting', $callback, '@2025-01-20 14:00');
+        $nextExecution = $scheduler->getNextExecution('meeting');
+        $this->assertNotNull($nextExecution);
+        $this->assertEquals('2025-01-20 14:00', date('Y-m-d H:i', $nextExecution));
+        
+        // Tâche inexistante
+        $nextExecution = $scheduler->getNextExecution('non-existent');
+        $this->assertNull($nextExecution);
+    }
+
+    /**
+     * 🔴 RED - Iteration 17.1
+     * Peut récupérer toutes les exécutions dans une plage de dates
+     * ESSENTIEL pour afficher le calendrier !
+     */
+    public function testCanGetExecutionsInDateRange(): void
+    {
+        // Période : 1-7 janvier 2025
+        $start = strtotime('2025-01-01 00:00:00');
+        $end = strtotime('2025-01-07 23:59:59');
+        
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider($start);
+        $scheduler = new Scheduler($timeProvider);
+        
+        $callback = function() {};
+        
+        // Tâche quotidienne à 9h
+        $scheduler->scheduleTask('daily-9am', $callback, '0 9 * * *');
+        
+        // Tâche le 1er du mois à 14h
+        $scheduler->scheduleTask('monthly-1st', $callback, '0 14 1 * *');
+        
+        // Tâche one-time le 5 janvier
+        $scheduler->scheduleTask('meeting', $callback, '@2025-01-05 10:00');
+        
+        // Récupérer toutes les exécutions entre le 1er et le 7 janvier
+        $executions = $scheduler->getExecutionsInRange($start, $end);
+        
+        // Vérifier la structure
+        $this->assertIsArray($executions);
+        $this->assertArrayHasKey('daily-9am', $executions);
+        $this->assertArrayHasKey('monthly-1st', $executions);
+        $this->assertArrayHasKey('meeting', $executions);
+        
+        // daily-9am devrait avoir 7 exécutions (1er au 7 janvier à 9h)
+        $this->assertCount(7, $executions['daily-9am']);
+        $this->assertEquals('2025-01-01 09:00', date('Y-m-d H:i', $executions['daily-9am'][0]));
+        $this->assertEquals('2025-01-07 09:00', date('Y-m-d H:i', $executions['daily-9am'][6]));
+        
+        // monthly-1st devrait avoir 1 exécution (1er janvier à 14h)
+        $this->assertCount(1, $executions['monthly-1st']);
+        $this->assertEquals('2025-01-01 14:00', date('Y-m-d H:i', $executions['monthly-1st'][0]));
+        
+        // meeting devrait avoir 1 exécution (5 janvier à 10h)
+        $this->assertCount(1, $executions['meeting']);
+        $this->assertEquals('2025-01-05 10:00', date('Y-m-d H:i', $executions['meeting'][0]));
+    }
 }
