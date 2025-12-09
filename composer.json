@@ -1,0 +1,21 @@
+{
+    "name": "efrei/tests-logiciel-officine",
+    "description": "Projet de tests pour la classe Officine",
+    "type": "project",
+    "require": {
+        "php": ">=8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "classmap": [
+            "src/"
+        ]
+    },
+    "autoload-dev": {
+        "classmap": [
+            "tests/"
+        ]
+    }
+}
