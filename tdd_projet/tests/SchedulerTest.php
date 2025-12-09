@@ -38,4 +38,26 @@ class SchedulerTest extends TestCase
         $this->assertCount(1, $tasks);
         $this->assertArrayHasKey('my-task', $tasks);
     }
+
+    /**
+     * 🔴 RED - Iteration 4.1
+     * Peut supprimer une tâche planifiée par son nom
+     */
+    public function testCanRemoveTask(): void
+    {
+        $scheduler = new Scheduler();
+        $callback = function() { return "test"; };
+        
+        $scheduler->scheduleTask('task1', $callback);
+        $scheduler->scheduleTask('task2', $callback);
+        
+        $this->assertCount(2, $scheduler->getTasks());
+        
+        $scheduler->removeTask('task1');
+        
+        $tasks = $scheduler->getTasks();
+        $this->assertCount(1, $tasks);
+        $this->assertArrayNotHasKey('task1', $tasks);
+        $this->assertArrayHasKey('task2', $tasks);
+    }
 }
