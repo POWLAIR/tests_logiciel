@@ -22,4 +22,18 @@ class Scheduler
     {
         return $this->tasks;
     }
+
+    /**
+     * Planifie une tâche
+     * 
+     * @param string $name Nom de la tâche
+     * @param callable $callback Fonction à exécuter
+     * @return void
+     */
+    public function scheduleTask(string $name, callable $callback): void
+    {
+        $this->tasks[$name] = [
+            'callback' => $callback
+        ];
+    }
 }
