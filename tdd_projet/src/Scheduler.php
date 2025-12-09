@@ -203,6 +203,39 @@ class Scheduler
             return $currentDay !== $lastExecutionDay;
         }
 
+        // Pour '0 H D * *' (à une heure fixe un jour du mois spécifique)
+        // Format: minute heure jour mois jour_semaine
+        // D = 1-31 (jour du mois)
+        if (preg_match('/^(\d+)\s+(\d+)\s+(\d+)\s+\*\s+\*$/', $periodicity, $matches)) {
+            $targetMinute = (int)$matches[1];
+            $targetHour = (int)$matches[2];
+            $targetDayOfMonth = (int)$matches[3];
+            
+            $currentHour = (int)date('H', $currentTime);
+            $currentMinute = (int)date('i', $currentTime);
+            $currentDayOfMonth = (int)date('j', $currentTime); // 1-31
+            $currentDay = date('Y-m-d', $currentTime);
+            
+            // Vérifier si on est le bon jour du mois
+            if ($currentDayOfMonth !== $targetDayOfMonth) {
+                return false;
+            }
+            
+            // Vérifier si on est à la bonne heure/minute
+            if ($currentHour !== $targetHour || $currentMinute !== $targetMinute) {
+                return false;
+            }
+            
+            // Si jamais exécuté, exécuter
+            if ($lastExecution === null) {
+                return true;
+            }
+            
+            // Vérifier qu'on n'a pas déjà exécuté aujourd'hui
+            $lastExecutionDay = date('Y-m-d', $lastExecution);
+            return $currentDay !== $lastExecutionDay;
+        }
+
         return false;
     }
 }
