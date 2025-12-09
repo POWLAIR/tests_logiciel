@@ -386,58 +386,61 @@
 /* Day View */
 .day-view-container {
     grid-column: 1 / -1;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
 }
 
 .day-view {
     max-height: 600px;
     overflow-y: auto;
     background: var(--bg-tertiary);
-    border-radius: var(--radius-md);
 }
 
 .hour-slot {
-    display: grid;
-    grid-template-columns: 80px 1fr;
+    display: flex; /* Changed from grid to flex for better control */
     border-bottom: 1px solid var(--bg-primary);
-    min-height: 60px;
+    min-height: 80px; /* Increased height */
     transition: background var(--transition-base);
 }
 
-.hour-slot:hover {
-    background: rgba(59, 130, 246, 0.05);
-}
-
-.hour-slot.has-tasks {
-    background: rgba(59, 130, 246, 0.05);
-}
-
 .hour-label {
+    width: 80px;
+    flex-shrink: 0;
     padding: var(--spacing-sm);
     color: var(--text-muted);
     font-weight: 600;
     font-size: 0.875rem;
     display: flex;
+    justify-content: center;
     align-items: flex-start;
-    border-right: 2px solid var(--bg-primary);
+    border-right: 1px solid var(--bg-primary);
+    background: var(--bg-secondary);
+    padding-top: var(--spacing-md);
 }
 
 .hour-content {
+    flex: 1;
     padding: var(--spacing-sm);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xs);
+    position: relative;
+    min-width: 0; /* Fix flex child overflow */
 }
 
 .task-event {
     background: var(--gradient-primary);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all var(--transition-base);
     color: white;
     display: flex;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
     align-items: center;
+    width: 100%;
+    box-shadow: var(--shadow-sm);
 }
 
 .task-event:hover {

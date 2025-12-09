@@ -32,6 +32,11 @@ class CalendarUI {
         this.currentView = view;
         document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
         document.querySelector(`[data-view="${view}"]`).classList.add('active');
+
+        // Toggle headers visibility
+        const headers = document.querySelectorAll('.calendar-day-header');
+        headers.forEach(h => h.style.display = view === 'day' ? 'none' : 'block');
+
         this.render();
     }
 
