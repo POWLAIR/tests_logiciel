@@ -810,7 +810,6 @@ class SchedulerUI {
 }
 
 // Initialize the application
-let schedulerUI;
 document.addEventListener('DOMContentLoaded', () => {
-    schedulerUI = new SchedulerUI();
+    window.schedulerUI = new SchedulerUI();
 });

@@ -119,4 +119,3 @@ if (document.readyState === 'loading') {
     // DOM already loaded, start immediately
     initCalendar();
 }
-```
