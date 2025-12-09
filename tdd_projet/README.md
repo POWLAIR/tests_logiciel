@@ -80,10 +80,40 @@ tdd_projet/
 │   └── Mocks/
 │       ├── MockTimeProvider.php   # Mock pour contrôler le temps
 │       └── MockCallback.php       # Mock pour compter exécutions
+├── demo/                          # 🎨 Interface Web Interactive
+│   ├── index.html                 # Structure UI
+│   ├── styles.css                 # Design moderne dark theme
+│   ├── app.js                     # Logique application
+│   └── README.md                  # Guide utilisation
 ├── composer.json
 ├── phpunit.xml
+├── example.php                    # Exemple CLI
 └── README.md
 ```
+
+## 🎨 Interface Web de Démonstration
+
+Une interface web moderne et interactive est disponible dans le dossier `demo/` :
+
+```bash
+# Ouvrir dans le navigateur
+open demo/index.html
+
+# Ou avec un serveur local
+cd demo
+python3 -m http.server 8000
+# Puis ouvrir http://localhost:8000
+```
+
+**Fonctionnalités de l'UI** :
+- ✅ Ajout/suppression de tâches visuellement
+- ✅ Contrôle du temps simulé (tick, +1h, +1 jour)
+- ✅ Journal d'exécution en temps réel
+- ✅ Statistiques dynamiques
+- ✅ Design dark theme avec animations fluides
+- ✅ Support complet des 4 périodicités
+
+Voir [demo/README.md](demo/README.md) pour plus de détails.
 
 ## 💻 Utilisation
 
