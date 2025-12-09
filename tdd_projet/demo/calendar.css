@@ -122,6 +122,15 @@
     letter-spacing: 0.05em;
 }
 
+/* Calendar days container */
+#calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--spacing-xs);
+    grid-column: 1 / -1;
+}
+
+
 .calendar-day {
     aspect-ratio: 1;
     background: var(--bg-tertiary);
