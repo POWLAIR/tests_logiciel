@@ -15,6 +15,7 @@ class SchedulerUI {
         // Form elements
         this.taskNameInput = document.getElementById('task-name');
         this.taskPeriodicitySelect = document.getElementById('task-periodicity');
+        this.customPeriodicityInput = document.getElementById('custom-periodicity');
         this.addTaskBtn = document.getElementById('add-task-btn');
         this.taskTypeRadios = document.querySelectorAll('input[name="task-type"]');
         this.dateTimePicker = document.getElementById('date-time-picker');
@@ -46,6 +47,16 @@ class SchedulerUI {
         // Task type radio buttons
         this.taskTypeRadios.forEach(radio => {
             radio.addEventListener('change', (e) => this.handleTaskTypeChange(e.target.value));
+        });
+
+        // Periodicity select - detect custom
+        this.taskPeriodicitySelect.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                this.customPeriodicityInput.style.display = 'block';
+                this.customPeriodicityInput.focus();
+            } else {
+                this.customPeriodicityInput.style.display = 'none';
+            }
         });
 
         this.tickBtn.addEventListener('click', () => this.tick());
@@ -94,7 +105,21 @@ class SchedulerUI {
             }
             periodicity = `@${date} ${time}`;
         } else {
-            periodicity = this.taskPeriodicitySelect.value;
+            const selectedValue = this.taskPeriodicitySelect.value;
+            if (selectedValue === 'custom') {
+                periodicity = this.customPeriodicityInput.value.trim();
+                if (!periodicity) {
+                    this.showNotification('Veuillez entrer une périodicité personnalisée', 'error');
+                    return;
+                }
+                // Basic validation
+                if (!this.validatePeriodicityFormat(periodicity)) {
+                    this.showNotification('Format de périodicité invalide', 'error');
+                    return;
+                }
+            } else {
+                periodicity = selectedValue;
+            }
         }
 
         const task = {
@@ -366,6 +391,19 @@ class SchedulerUI {
             year: 'numeric',
             weekday: 'long'
         });
+    }
+
+    validatePeriodicityFormat(periodicity) {
+        // Validate common periodicity formats
+        const patterns = [
+            /^\*$/,                                    // *
+            /^\*\/\d+$/,                               // */N
+            /^\d+\s+\d+\s+\*\s+\*\s+\*$/,             // M H * * *
+            /^\d+\s+\d+\s+\*\s+\*\s+\d+$/,            // M H * * D (day of week)
+            /^\d+\s+\d+\s+\d+\s+\*\s+\*$/             // M H D * * (day of month)
+        ];
+
+        return patterns.some(pattern => pattern.test(periodicity));
     }
 
     getPeriodicityLabel(periodicity) {

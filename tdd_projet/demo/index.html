@@ -70,7 +70,11 @@
                         <option value="0 9 * * 5">Vendredis à 9h</option>
                         <option value="0 9 1 * *">1er du mois à 9h</option>
                         <option value="0 9 15 * *">15 du mois à 9h</option>
+                        <option value="custom">⚙️ Personnalisé...</option>
                     </select>
+
+                    <input type="text" id="custom-periodicity" class="input"
+                        placeholder="Ex: */15, 0 12 * * *, 0 0 1 * *" style="display: none;">
 
                     <div id="date-time-picker" class="date-time-picker" style="display: none;">
                         <input type="date" id="task-date" class="input">
