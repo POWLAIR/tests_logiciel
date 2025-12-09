@@ -49,14 +49,25 @@ class CalendarUI {
         const executions = this.schedulerUI.getExecutionsInRange(startTime, endTime);
         console.log('Executions in range:', executions);
 
-        // Count executions per day
-        const executionsPerDay = {};
-        Object.values(executions).forEach(taskExecutions => {
-            taskExecutions.forEach(timestamp => {
+        // Group tasks by day with details
+        const tasksPerDay = {};
+        Object.entries(executions).forEach(([taskName, timestamps]) => {
+            timestamps.forEach(timestamp => {
                 const date = new Date(timestamp);
                 const dayKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-                executionsPerDay[dayKey] = (executionsPerDay[dayKey] || 0) + 1;
+
+                if (!tasksPerDay[dayKey]) tasksPerDay[dayKey] = [];
+                tasksPerDay[dayKey].push({
+                    name: taskName,
+                    time: date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: timestamp
+                });
             });
+        });
+
+        // Sort tasks by time within each day
+        Object.keys(tasksPerDay).forEach(dayKey => {
+            tasksPerDay[dayKey].sort((a, b) => a.timestamp - b.timestamp);
         });
 
         // Render calendar days
@@ -73,20 +84,30 @@ class CalendarUI {
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const dayKey = `${year}-${month}-${day}`;
-            const executionCount = executionsPerDay[dayKey] || 0;
+            const tasksForDay = tasksPerDay[dayKey] || [];
             const isCurrentDay = date.toDateString() === currentSimulatedDay;
 
             const classes = ['calendar-day'];
             if (isCurrentDay) classes.push('current-day');
-            if (executionCount > 0) classes.push('has-tasks');
+            if (tasksForDay.length > 0) classes.push('has-tasks');
 
             html += `
-                <div class="${classes.join(' ')}" title="${executionCount} tâche(s)">
+                <div class="${classes.join(' ')}" title="${tasksForDay.length} tâche(s)">
                     <span class="day-number">${day}</span>
-                    ${executionCount > 0 ? `<span class="task-count">${executionCount}</span>` : ''}
+                    <div class="day-tasks">
+                        ${tasksForDay.slice(0, 3).map(t => `
+                            <div class="task-mini">
+                                <span class="task-dot"></span>
+                                <span class="task-time">${t.time}</span>
+                                <span class="task-name">${t.name}</span>
+                            </div>
+                        `).join('')}
+                        ${tasksForDay.length > 3 ? `<div class="task-more">+${tasksForDay.length - 3} autre${tasksForDay.length > 4 ? 's' : ''}</div>` : ''}
+                    </div>
                 </div>
             `;
         }
+
 
         console.log('Generated HTML length:', html.length);
         console.log('Setting innerHTML on calendar-days:', this.calendarDays);
