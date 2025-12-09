@@ -73,4 +73,36 @@ class SchedulerTest extends TestCase
         // Le scheduler doit accepter le TimeProvider sans erreur
         $this->assertInstanceOf(Scheduler::class, $scheduler);
     }
+
+    /**
+     * 🔴 RED - Iteration 6.1
+     * tick() exécute les tâches "chaque minute"
+     */
+    public function testTickExecutesTasksEveryMinute(): void
+    {
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(0);
+        $scheduler = new Scheduler($timeProvider);
+        
+        $executionCount = 0;
+        $callback = function() use (&$executionCount) {
+            $executionCount++;
+        };
+        
+        // Planifier une tâche "chaque minute"
+        $scheduler->scheduleTask('every-minute-task', $callback, '*');
+        
+        // Tick au temps 0 : doit exécuter
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Devrait exécuter au premier tick");
+        
+        // Avancer de 30 secondes : ne doit PAS exécuter
+        $timeProvider->advanceTime(30);
+        $scheduler->tick();
+        $this->assertEquals(1, $executionCount, "Ne devrait pas exécuter après 30s");
+        
+        // Avancer de 30 secondes de plus (total 60s) : doit exécuter
+        $timeProvider->advanceTime(30);
+        $scheduler->tick();
+        $this->assertEquals(2, $executionCount, "Devrait exécuter après 60s");
+    }
 }
