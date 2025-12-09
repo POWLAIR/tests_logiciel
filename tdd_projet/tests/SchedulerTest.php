@@ -464,4 +464,41 @@ class SchedulerTest extends TestCase
         $this->assertArrayNotHasKey('temp-reminder', $tasks, "Tâche devrait être auto-supprimée");
         $this->assertCount(0, $tasks);
     }
+
+    /**
+     * 🔴 RED - Iteration 16.1
+     * Peut récupérer le prochain timestamp d'exécution d'une tâche
+     */
+    public function testCanGetNextExecutionTime(): void
+    {
+        $timeProvider = new \Scheduler\Tests\Mocks\MockTimeProvider(strtotime('2025-01-15 08:30:00'));
+        $scheduler = new Scheduler($timeProvider);
+        
+        $callback = function() {};
+        
+        // Tâche toutes les 5 minutes
+        $scheduler->scheduleTask('every-5-min', $callback, '*/5');
+        
+        // Prochain timestamp devrait être à 08:35 (dans 5 minutes)
+        $nextExecution = $scheduler->getNextExecution('every-5-min');
+        $this->assertNotNull($nextExecution);
+        $this->assertEquals('08:35', date('H:i', $nextExecution));
+        
+        // Tâche quotidienne à 9h
+        $scheduler->scheduleTask('daily-9am', $callback, '0 9 * * *');
+        $nextExecution = $scheduler->getNextExecution('daily-9am');
+        $this->assertNotNull($nextExecution);
+        $this->assertEquals('09:00', date('H:i', $nextExecution));
+        $this->assertEquals('2025-01-15', date('Y-m-d', $nextExecution));
+        
+        // Tâche one-time
+        $scheduler->scheduleTask('meeting', $callback, '@2025-01-20 14:00');
+        $nextExecution = $scheduler->getNextExecution('meeting');
+        $this->assertNotNull($nextExecution);
+        $this->assertEquals('2025-01-20 14:00', date('Y-m-d H:i', $nextExecution));
+        
+        // Tâche inexistante
+        $nextExecution = $scheduler->getNextExecution('non-existent');
+        $this->assertNull($nextExecution);
+    }
 }
