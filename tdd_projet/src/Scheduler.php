@@ -98,23 +98,51 @@ class Scheduler
      */
     private function shouldExecute(array $task, int $currentTime): bool
     {
-        // Si jamais exécutée, l'exécuter
-        if ($task['lastExecution'] === null) {
-            return true;
-        }
-
         $periodicity = $task['periodicity'];
-        $elapsed = $currentTime - $task['lastExecution'];
+        $lastExecution = $task['lastExecution'];
 
         // Pour '*' (chaque minute) : vérifier si 60 secondes sont passées
         if ($periodicity === '*') {
+            if ($lastExecution === null) {
+                return true;
+            }
+            $elapsed = $currentTime - $lastExecution;
             return $elapsed >= 60;
         }
 
         // Pour '*/N' (toutes les N minutes) : vérifier si N*60 secondes sont passées
         if (preg_match('/^\*\/(\d+)$/', $periodicity, $matches)) {
+            if ($lastExecution === null) {
+                return true;
+            }
             $minutes = (int)$matches[1];
+            $elapsed = $currentTime - $lastExecution;
             return $elapsed >= ($minutes * 60);
+        }
+
+        // Pour '0 H * * *' (à une heure fixe tous les jours)
+        // Format: minute heure jour mois jour_semaine
+        if (preg_match('/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/', $periodicity, $matches)) {
+            $targetMinute = (int)$matches[1];
+            $targetHour = (int)$matches[2];
+            
+            $currentHour = (int)date('H', $currentTime);
+            $currentMinute = (int)date('i', $currentTime);
+            $currentDay = date('Y-m-d', $currentTime);
+            
+            // Vérifier si on est à la bonne heure/minute
+            if ($currentHour !== $targetHour || $currentMinute !== $targetMinute) {
+                return false;
+            }
+            
+            // Si jamais exécuté, exécuter
+            if ($lastExecution === null) {
+                return true;
+            }
+            
+            // Vérifier qu'on n'a pas déjà exécuté aujourd'hui
+            $lastExecutionDay = date('Y-m-d', $lastExecution);
+            return $currentDay !== $lastExecutionDay;
         }
 
         return false;
