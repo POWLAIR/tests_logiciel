@@ -5,6 +5,8 @@ class SchedulerUI {
         this.currentTime = new Date('2025-01-15T08:00:00');
         this.executionLog = [];
         this.totalExecutions = 0;
+        this.editMode = false;
+        this.editingTaskName = null;
 
         this.initializeElements();
         this.attachEventListeners();
@@ -81,6 +83,13 @@ class SchedulerUI {
 
     addTask() {
         const name = this.taskNameInput.value.trim();
+
+        // If in edit mode, call updateTask instead
+        if (this.editMode) {
+            this.updateTask(this.editingTaskName);
+            return;
+        }
+
         const taskType = document.querySelector('input[name="task-type"]:checked').value;
         let periodicity;
         const autoRemove = document.getElementById('auto-remove').checked;
@@ -133,9 +142,135 @@ class SchedulerUI {
         this.tasks.set(name, task);
         this.taskNameInput.value = '';
         document.getElementById('auto-remove').checked = false;
+
+        // Reset custom periodicity if used
+        if (this.taskPeriodicitySelect.value === 'custom') {
+            this.customPeriodicityInput.value = '';
+            this.customPeriodicityInput.style.display = 'none';
+            this.taskPeriodicitySelect.value = '*';
+        }
+
         this.renderTasks();
         this.updateStats();
         this.showNotification(`Tâche "${name}" ajoutée !`, 'success');
+    }
+
+    editTask(name) {
+        const task = this.tasks.get(name);
+        if (!task) return;
+
+        this.editMode = true;
+        this.editingTaskName = name;
+
+        // Pre-fill form
+        this.taskNameInput.value = name;
+        this.taskNameInput.disabled = true; // Can't change name while editing
+
+        // Check if one-time task
+        if (task.periodicity.startsWith('@')) {
+            document.querySelector('input[name="task-type"][value="one-time"]').checked = true;
+            this.handleTaskTypeChange('one-time');
+
+            const match = task.periodicity.match(/^@(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})$/);
+            if (match) {
+                this.taskDateInput.value = match[1];
+                this.taskTimeInput.value = match[2];
+            }
+        } else {
+            document.querySelector('input[name="task-type"][value="recurring"]').checked = true;
+            this.handleTaskTypeChange('recurring');
+
+            // Check if it's a predefined value
+            const option = Array.from(this.taskPeriodicitySelect.options)
+                .find(opt => opt.value === task.periodicity && opt.value !== 'custom');
+
+            if (option) {
+                this.taskPeriodicitySelect.value = task.periodicity;
+            } else {
+                // Custom periodicity
+                this.taskPeriodicitySelect.value = 'custom';
+                this.customPeriodicityInput.value = task.periodicity;
+                this.customPeriodicityInput.style.display = 'block';
+            }
+        }
+
+        document.getElementById('auto-remove').checked = task.autoRemove;
+
+        // Change button text
+        this.addTaskBtn.innerHTML = '<span>💾</span> Mettre à jour';
+        this.addTaskBtn.classList.add('btn-update');
+
+        // Add cancel button
+        if (!document.getElementById('cancel-edit-btn')) {
+            const cancelBtn = document.createElement('button');
+            cancelBtn.id = 'cancel-edit-btn';
+            cancelBtn.className = 'btn btn-secondary';
+            cancelBtn.innerHTML = '<span>❌</span> Annuler';
+            cancelBtn.onclick = () => this.cancelEdit();
+            this.addTaskBtn.parentElement.appendChild(cancelBtn);
+        }
+
+        this.showNotification('Mode édition activé', 'info');
+    }
+
+    cancelEdit() {
+        this.editMode = false;
+        this.editingTaskName = null;
+
+        this.taskNameInput.value = '';
+        this.taskNameInput.disabled = false;
+        document.getElementById('auto-remove').checked = false;
+        this.customPeriodicityInput.value = '';
+        this.customPeriodicityInput.style.display = 'none';
+        this.taskPeriodicitySelect.value = '*';
+
+        this.addTaskBtn.innerHTML = '<span>➕</span> Ajouter';
+        this.addTaskBtn.classList.remove('btn-update');
+
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        if (cancelBtn) cancelBtn.remove();
+
+        this.showNotification('Édition annulée', 'info');
+    }
+
+    updateTask(name) {
+        const task = this.tasks.get(name);
+        if (!task) return;
+
+        const taskType = document.querySelector('input[name="task-type"]:checked').value;
+        let periodicity;
+        const autoRemove = document.getElementById('auto-remove').checked;
+
+        // Generate new periodicity
+        if (taskType === 'one-time') {
+            const date = this.taskDateInput.value;
+            const time = this.taskTimeInput.value;
+            if (!date || !time) {
+                this.showNotification('Veuillez sélectionner une date et heure', 'error');
+                return;
+            }
+            periodicity = `@${date} ${time}`;
+        } else {
+            const selectedValue = this.taskPeriodicitySelect.value;
+            if (selectedValue === 'custom') {
+                periodicity = this.customPeriodicityInput.value.trim();
+                if (!periodicity || !this.validatePeriodicityFormat(periodicity)) {
+                    this.showNotification('Format de périodicité invalide', 'error');
+                    return;
+                }
+            } else {
+                periodicity = selectedValue;
+            }
+        }
+
+        // Update task (keep lastExecution)
+        task.periodicity = periodicity;
+        task.autoRemove = autoRemove || taskType === 'one-time';
+
+        this.tasks.set(name, task);
+        this.cancelEdit();
+        this.renderTasks();
+        this.showNotification(`Tâche "${name}" mise à jour !`, 'success');
     }
 
     removeTask(name) {
@@ -339,6 +474,9 @@ class SchedulerUI {
                 <div class="task-header">
                     <span class="task-name">${task.name}</span>
                     <div class="task-actions">
+                        <button class="task-btn" onclick="schedulerUI.editTask('${task.name}')" title="Éditer">
+                            ✏️
+                        </button>
                         <button class="task-btn" onclick="schedulerUI.removeTask('${task.name}')" title="Supprimer">
                             🗑️
                         </button>
