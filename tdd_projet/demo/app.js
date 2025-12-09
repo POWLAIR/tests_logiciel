@@ -693,7 +693,7 @@ class SchedulerUI {
             const executions = [];
             const { periodicity } = task;
 
-            // For one-time tasks
+            // For one-time tasks (@YYYY-MM-DD HH:MM)
             const matchOneTime = periodicity.match(/^@(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/);
             if (matchOneTime) {
                 const targetDate = new Date(
@@ -708,38 +708,93 @@ class SchedulerUI {
                 if (targetTimestamp >= startTime && targetTimestamp <= endTime) {
                     executions.push(targetTimestamp);
                 }
-            } else {
-                // For recurring tasks, iterate through each day
+            }
+            // For */N (every N minutes)
+            else if (periodicity.match(/^\*\/(\d+)$/)) {
+                const interval = parseInt(periodicity.match(/^\*\/(\d+)$/)[1]) * 60000;
+                // Round start time to next interval boundary
+                let time = Math.ceil(startTime / interval) * interval;
+
+                while (time <= endTime) {
+                    if (time >= startTime) {
+                        executions.push(time);
+                    }
+                    time += interval;
+                }
+            }
+            // For * (every minute)
+            else if (periodicity === '*') {
+                let time = Math.ceil(startTime / 60000) * 60000;
+
+                while (time <= endTime) {
+                    if (time >= startTime) {
+                        executions.push(time);
+                    }
+                    time += 60000;
+                }
+            }
+            // For M H * * * (daily at specific time)
+            else if (periodicity.match(/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/)) {
+                const match = periodicity.match(/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/);
+                const minute = parseInt(match[1]);
+                const hour = parseInt(match[2]);
+
                 let currentDay = new Date(startTime);
-                currentDay.setHours(0, 0, 0, 0);
+                currentDay.setHours(hour, minute, 0, 0);
+
+                // If we're past today's execution time, start tomorrow
+                if (currentDay.getTime() < startTime) {
+                    currentDay.setDate(currentDay.getDate() + 1);
+                }
 
                 while (currentDay.getTime() <= endTime) {
-                    // Test each hour and minute of the day
-                    for (let hour = 0; hour < 24; hour++) {
-                        for (let minute = 0; minute < 60; minute++) {
-                            const testTime = new Date(currentDay);
-                            testTime.setHours(hour, minute, 0, 0);
-                            const testTimestamp = testTime.getTime();
-
-                            if (testTimestamp >= startTime && testTimestamp <= endTime) {
-                                const mockTask = {
-                                    periodicity: periodicity,
-                                    lastExecution: null
-                                };
-
-                                if (this.shouldExecute(mockTask, testTimestamp)) {
-                                    executions.push(testTimestamp);
-                                    break; // Only one execution per hour/minute combination
-                                }
-                            }
-                        }
-                        if (executions.length > 0 && executions[executions.length - 1] >= currentDay.getTime() &&
-                            executions[executions.length - 1] < currentDay.getTime() + 86400000) {
-                            break; // Found execution for this day
-                        }
+                    if (currentDay.getTime() >= startTime) {
+                        executions.push(currentDay.getTime());
                     }
-
                     currentDay.setDate(currentDay.getDate() + 1);
+                }
+            }
+            // For M H * * D (specific day of week)
+            else if (periodicity.match(/^(\d+)\s+(\d+)\s+\*\s+\*\s+(\d+)$/)) {
+                const match = periodicity.match(/^(\d+)\s+(\d+)\s+\*\s+\*\s+(\d+)$/);
+                const minute = parseInt(match[1]);
+                const hour = parseInt(match[2]);
+                const targetDay = parseInt(match[3]);
+
+                let currentDate = new Date(startTime);
+                currentDate.setHours(hour, minute, 0, 0);
+
+                // Find  first occurrence
+                while (currentDate.getDay() !== targetDay || currentDate.getTime() < startTime) {
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+
+                while (currentDate.getTime() <= endTime) {
+                    executions.push(currentDate.getTime());
+                    currentDate.setDate(currentDate.getDate() + 7); // Next week
+                }
+            }
+            // For M H D * * (specific day of month)
+            else if (periodicity.match(/^(\d+)\s+(\d+)\s+(\d+)\s+\*\s+\*$/)) {
+                const match = periodicity.match(/^(\d+)\s+(\d+)\s+(\d+)\s+\*\s+\*$/);
+                const minute = parseInt(match[1]);
+                const hour = parseInt(match[2]);
+                const day = parseInt(match[3]);
+
+                let currentMonth = new Date(startTime);
+                currentMonth.setDate(day);
+                currentMonth.setHours(hour, minute, 0, 0);
+
+                // If we're past this month's execution, start next month
+                if (currentMonth.getTime() < startTime) {
+                    currentMonth.setMonth(currentMonth.getMonth() + 1);
+                }
+
+                while (currentMonth.getTime() <= endTime) {
+                    if (currentMonth.getTime() >= startTime && currentMonth.getDate() === day) {
+                        executions.push(currentMonth.getTime());
+                    }
+                    currentMonth.setMonth(currentMonth.getMonth() + 1);
                 }
             }
 
